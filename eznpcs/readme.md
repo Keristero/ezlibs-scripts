@@ -6,16 +6,6 @@ You can create branching dialogue trees for conversations with NPCs all from the
 
 You can create paths using waypoints in the map editor which the NPCs will follow, with optional wait times and random path selection.
 
-## Installation
-currently all the files for eznpcs are scattered inside this gravy-yum repository, its inconvenient but you can find all the files you need here.
-
-installation steps
-1. copy eznpcs.lua to `yourserver/scripts/ezlibs-scripts/eznpcs/eznpcs.lua`
-2. copy main_entry.lua to `yourserver/scripts/main_entry.lua`
-3. copy the eznpcs folder from the assets folder to `yourserver/assets/ezlibs-assets/eznpcs`
-optional:
-    1. there are a bunch of events for this server in the entry script, use them as examples or remove them if you dont want them.
-
 ## Setup
 add objects to your map with Type=`NPC` on an object layer above the tile layer where you want the NPC to spawn.
 
