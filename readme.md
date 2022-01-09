@@ -68,8 +68,10 @@ Special Animations (for arrival / leave animation):
 
 ### Making "Arrow Warps" using Radius Warp
 Arrow A
+
 ![example1](./example-arrow-warp.PNG)
 Arrow B
+
 ![example2](./example-arrow-warp-2.PNG)
 
 More special animations can be added by requiring them in main.lua -> special_animations
@@ -221,8 +223,39 @@ eznpcs.add_event(some_event)
 - Down Left
 - Down Right
 
+# ezmystery
+lets you place mystery data objects on your maps to give players key items and money
+
+## Setup
+add objects to your map with Type=`Mystery Datum` on an object layer above the tile layer where you want the Mystery data to spawn
+
+### Mystery Dataum
+- Custom properties:
+    - Type: string
+        - one of these three options
+            - money
+            - keyitem
+            - random
+    - Amount: number
+        - the amount of money to give the player
+    - Name: string
+        - name of the key item to give the player (the item will be created automatically by ezmystery if it does not exist)
+    - Name: description
+        - description of the key item to give the player, if keyitems with the same name already exist, all of them will be updated with the new description
+    - Next #: object
+        - You can have up to 9 of these, named `Next 1`, `Next 2` etc
+        - if using the `random` type, the reward will be selected from a `Mystery Option` type object; randomly selected from a `Next #` property
+
+### Mystery Option
+- Custom properties:
+    - (all the same properties as mystery datum, but these are exclusively for providing random rewards as they will be removed from the map when the server loads)
+
 # ezmemory
 provides easyish saving and loading of things.
+
+as long as you use the ezmemory functions (as opposed to the built in equivilants) ezmemory will automatically persist player money, items, key items, and any other table data you want.
+
+note that if you create an item which is not a key item, it will not show up anywhere, this can still be useful for your own custom scripts.
 
 ```lua
 local new_item_id = ezmemory.create_or_update_item(item_name,item_description,is_key)
@@ -231,14 +264,32 @@ local new_item_id = ezmemory.create_or_update_item(item_name,item_description,is
 - if an item with the same name already exists; the details will be updated, this wont update in the players key items until the player reconnects
 
 ```lua
-local new_item_count = ezmemory.give_player_item(player_id, name, amount)
+local new_item_count = ezmemory.give_player_item(player_id, item_name, amount)
 ```
-- gives the player an item
+- will return `nil` if the item you attempted to give the player has not been created using `ezmemory.create_or_update_item`
+
+```lua
+local item_count = ezmemory.count_player_item(player_id, item_name)
+```
+
+```lua
+ezmemory.set_player_money(player_id, money)
+```
+
+```lua
+local success = ezmemory.spend_player_money(player_id, amount)
+```
+- spends the specified amount of money if the player has enough
+- returns `true` if the player had enough money, otherwise returns `false`
+
+these have been the main functions, but there are more to see in the ezmemory.lua file
 
 # ezencounters
 handle enemy encounters, and trigger random ones from a table for each map
 
 create a lua file for each map with the same name as the tiled map (`default.lua` for example)
+and put the file into the `server/encounters/` (create this folder if it does not exist)
+
 here is an example of the contents, in this case just one potential encounter layout with some mettaurs and a champy
 
 ```lua
