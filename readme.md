@@ -313,3 +313,27 @@ return {
     encounters={encounter1}
 }
 ```
+
+# ezweather
+lets you control the weather per map
+
+## Setup
+add some extra properties to your map file if you want to
+
+```lua
+ezweather.start_rain_in_area(area_id)
+```
+- if you specify a `Rain Song` custom property on your map, it will play while it is raining
+
+```lua
+ezweather.start_snow_in_area(area_id)
+```
+- if you specify a `Snow Song` custom property on your map, it will play while it is snowing
+
+```lua
+ezweather.clear_weather_in_area(area_id)
+```
+- restores the original foreground and `Song`
+
+# ezfarms
+a large plugin which adds a harvest moon style farming system to your server. but it is a pain to set up so disable it by removing it from the start of main.lua (and the plugin list in main.lua)
