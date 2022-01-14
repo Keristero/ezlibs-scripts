@@ -115,7 +115,6 @@ function add_landing(area_id, incoming_data, x, y, z, direction, warp_in, arriva
     log('added landing for '..incoming_data.." = "..json.encode(new_landing))
 end
 
-
 function doAnimationForWarp(player_id,animation_name,is_leave_animation,warp_object)
     log('doing special animation '..animation_name)
     players_in_animations[player_id] = true
@@ -280,6 +279,7 @@ end
 --target_area=target_area,
 --area_id=area_id
 
+-- Handle players request to use a warp of type Interact Warp
 function use_warp(player_id,warp_object,warp_meta)
     local warp_properties = warp_object.custom_properties
     local is_valid_warp = false
@@ -343,6 +343,7 @@ function use_warp(player_id,warp_object,warp_meta)
 end
 
 function ezwarps.handle_custom_warp(player_id, object_id)
+    log('handle custom warp for ' .. object_id)
     if not ezwarps.player_is_in_animation(player_id) then
         local player_area = Net.get_player_area(player_id)
         local object = Net.get_object_by_id(player_area, object_id)
