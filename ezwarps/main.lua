@@ -171,25 +171,34 @@ for i, area_id in next, areas do
         end
 
         if object.type == "Custom Warp" then
+            local warp_is_valid = true
+            
             print('[ezwarps] adding custom warp... '..object_id)
-            --radius warp, activates when you walk in range
             local target_object = nil
             local target_area = object.custom_properties["Target Area"]
             local dont_teleport = object.custom_properties["Dont Teleport"]
             if not dont_teleport and target_area then
-                target_object = Net.get_object_by_id(target_area, object.custom_properties["Target Object"])
+                target_object = Net.get_object_by_id(target_area, object.custom_properties["Target Object"])                
+                if target_object == nil then
+                    print('[ezwarps] found warp with target area, but could not find target object')
+                    print('[ezwarps] skipping current warp due to missing target object')
+                    warp_is_valid = false                    
+                end
             end
-            local custom_warp_meta = {
-                target_object=target_object,
-                object=object,
-                target_area=target_area,
-                area_id=area_id
-            }
-            if not custom_warps[area_id] then
-                custom_warps[area_id] = {}
+            
+            if warp_is_valid == true then
+                local custom_warp_meta = {
+                    target_object=target_object,
+                    object=object,
+                    target_area=target_area,
+                    area_id=area_id
+                }
+                if not custom_warps[area_id] then
+                    custom_warps[area_id] = {}
+                end
+                custom_warps[area_id][object.id] = custom_warp_meta
+                print('[ezwarps] added custom warp '..object_id)
             end
-            custom_warps[area_id][object.id] = custom_warp_meta
-            print('[ezwarps] added custom warp '..object_id)
         end
     end
 end
