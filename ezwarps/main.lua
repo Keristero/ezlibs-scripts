@@ -190,6 +190,7 @@ function add_custom_warp(object, object_id, area_id, area_name)
     end 
 end
 
+-- Detect all warps across all rooms
 local areas = Net.list_areas()
 for i, area_id in next, areas do
     
@@ -210,11 +211,11 @@ for i, area_id in next, areas do
         end
 
         if object.type == "Radius Warp" then
-            add_radius_warp(object, object_id, area_id)
+            add_radius_warp(object, object_id, area_id, area_name)
         end
 
         if object.type == "Custom Warp" then
-            add_custom_warp(object, object_id, area_id)   
+            add_custom_warp(object, object_id, area_id, area_name)   
         end
     end
 end
