@@ -4,7 +4,7 @@ local ezmystery = require('scripts/ezlibs-scripts/ezmystery')
 local ezfarms = require('scripts/ezlibs-scripts/ezfarms')
 local ezweather = require('scripts/ezlibs-scripts/ezweather')
 local ezwarps = require('scripts/ezlibs-scripts/ezwarps/main')
-local ezencounters = require('scripts/ezlibs-scripts/ezencounters/main')
+--local ezencounters = require('scripts/ezlibs-scripts/ezencounters/main')
 
 local plugins = {ezweather,eznpcs,ezmemory,ezmystery,ezfarms,ezwarps,ezencounters}
 
