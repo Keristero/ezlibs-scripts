@@ -194,7 +194,7 @@ end
 local areas = Net.list_areas()
 for i, area_id in next, areas do
     
-    local areaName = Net.get_area_name(area_id)
+    local area_name = Net.get_area_name(area_id)
     local objects = Net.list_objects(area_id)
     for i, object_id in next, objects do
         local object = Net.get_object_by_id(area_id, object_id)
