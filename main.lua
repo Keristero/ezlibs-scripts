@@ -28,6 +28,7 @@ end
 function handle_custom_warp(player_id, object_id)
     print('handle_custom_warp called on main')
     for i,plugin in ipairs(plugins)do
+        print('iterating plugin')
         if plugin.handle_custom_warp then
             print('found handler')
             plugin.handle_custom_warp(player_id, object_id)
