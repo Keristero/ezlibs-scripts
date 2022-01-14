@@ -133,6 +133,8 @@ end
 
 local areas = Net.list_areas()
 for i, area_id in next, areas do
+    
+    local areaName = Net.get_area_name(area_id)
     local objects = Net.list_objects(area_id)
     for i, object_id in next, objects do
         local object = Net.get_object_by_id(area_id, object_id)
@@ -173,14 +175,14 @@ for i, area_id in next, areas do
         if object.type == "Custom Warp" then
             local warp_is_valid = true
             
-            print('[ezwarps] adding custom warp... '..object_id)
+            print('[ezwarps] adding custom warp with id ' .. object_id .. ' in ' .. areaName .. ' ... ')
             local target_object = nil
             local target_area = object.custom_properties["Target Area"]
             local dont_teleport = object.custom_properties["Dont Teleport"]
             if not dont_teleport and target_area then
                 target_object = Net.get_object_by_id(target_area, object.custom_properties["Target Object"])                
                 if target_object == nil then
-                    print('[ezwarps] found warp with target area, but could not find target object')
+                    print('[ezwarps] found warp in ' .. areaName .. ' with target area, but could not find target object')
                     print('[ezwarps] skipping current warp due to missing target object')
                     warp_is_valid = false                    
                 end
