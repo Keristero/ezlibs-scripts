@@ -1,12 +1,14 @@
 local eznpcs = require('scripts/ezlibs-scripts/eznpcs/eznpcs')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 local ezmystery = require('scripts/ezlibs-scripts/ezmystery')
--- local ezfarms = require('scripts/ezlibs-scripts/ezfarms')
 local ezweather = require('scripts/ezlibs-scripts/ezweather')
 local ezwarps = require('scripts/ezlibs-scripts/ezwarps/main')
+
+--local ezfarms = require('scripts/ezlibs-scripts/ezfarms')
 --local ezencounters = require('scripts/ezlibs-scripts/ezencounters/main')
 
 --local plugins = {ezweather,eznpcs,ezmemory,ezmystery,ezfarms,ezwarps,ezencounters}
+
 local plugins = {ezweather,eznpcs,ezmemory,ezmystery,ezwarps}
 
 local sfx = {
@@ -27,11 +29,8 @@ function handle_battle_results(player_id, stats)
 end
 
 function handle_custom_warp(player_id, object_id)
-    print('handle_custom_warp called on main')
     for i,plugin in ipairs(plugins)do
-        print('iterating plugin')
         if plugin.handle_custom_warp then
-            print('found handler')
             plugin.handle_custom_warp(player_id, object_id)
         end
     end
