@@ -41,6 +41,7 @@ function table_has_value (table, val)
     return false
 end
 
+-- Logs the given message on screen --
 function log(message)
    print('[ezwarps] ' .. message) 
 end
@@ -135,6 +136,60 @@ function doAnimationForWarp(player_id,animation_name,is_leave_animation,warp_obj
     end
 end
 
+-- Adds the given radius warp to the list of detected radius warps
+function add_radius_warp(object, object_id, area_id, area_name)
+    log('adding radius warp... '..object_id)
+    local target_object = nil
+    local target_area = object.custom_properties["Target Area"]
+    local dont_teleport = object.custom_properties["Dont Teleport"]
+    if not dont_teleport and target_area then
+        target_object = Net.get_object_by_id(target_area, object.custom_properties["Target Object"])
+    end
+    local activation_radius = tonumber(object.custom_properties["Activation Radius"])
+    local new_radius_warp = {
+        target_object=target_object,
+        object=object,
+        activation_radius=activation_radius,
+        target_area=target_area,
+        area_id=area_id,
+        in_range={}
+    }
+    radius_warps[#radius_warps+1] = new_radius_warp
+    log('added radius warp '..object_id)
+end
+
+-- Adds the given custom warp to the list of detected custom warps
+function add_custom_warp(object, object_id, area_id, area_name) 
+    local warp_is_valid = true
+            
+    log('adding custom warp with id ' .. object_id .. ' in ' .. area_name .. ' ... ')
+    local target_object = nil
+    local target_area = object.custom_properties["Target Area"]
+    local dont_teleport = object.custom_properties["Dont Teleport"]
+    if not dont_teleport and target_area then
+        target_object = Net.get_object_by_id(target_area, object.custom_properties["Target Object"])                
+        if target_object == nil then
+            log('found warp in ' .. area_name .. ' with target area, but could not find target object')
+            log('skipping current warp due to missing target object')
+            warp_is_valid = false                    
+        end
+    end
+
+    if warp_is_valid == true then
+        local custom_warp_meta = {
+            target_object=target_object,
+            object=object,
+            target_area=target_area,
+            area_id=area_id
+        }
+        if not custom_warps[area_id] then
+            custom_warps[area_id] = {}
+        end
+        custom_warps[area_id][object.id] = custom_warp_meta
+        log('added custom warp '..object_id)
+    end 
+end
+
 local areas = Net.list_areas()
 for i, area_id in next, areas do
     
@@ -155,56 +210,11 @@ for i, area_id in next, areas do
         end
 
         if object.type == "Radius Warp" then
-            log('adding radius warp... '..object_id)
-            --radius warp, activates when you walk in range
-            local target_object = nil
-            local target_area = object.custom_properties["Target Area"]
-            local dont_teleport = object.custom_properties["Dont Teleport"]
-            if not dont_teleport and target_area then
-                target_object = Net.get_object_by_id(target_area, object.custom_properties["Target Object"])
-            end
-            local activation_radius = tonumber(object.custom_properties["Activation Radius"])
-            local new_radius_warp = {
-                target_object=target_object,
-                object=object,
-                activation_radius=activation_radius,
-                target_area=target_area,
-                area_id=area_id,
-                in_range={}
-            }
-            radius_warps[#radius_warps+1] = new_radius_warp
-            log('added radius warp '..object_id)
+            add_radius_warp(object, object_id, area_id)
         end
 
         if object.type == "Custom Warp" then
-            local warp_is_valid = true
-            
-            log('adding custom warp with id ' .. object_id .. ' in ' .. areaName .. ' ... ')
-            local target_object = nil
-            local target_area = object.custom_properties["Target Area"]
-            local dont_teleport = object.custom_properties["Dont Teleport"]
-            if not dont_teleport and target_area then
-                target_object = Net.get_object_by_id(target_area, object.custom_properties["Target Object"])                
-                if target_object == nil then
-                    log('found warp in ' .. areaName .. ' with target area, but could not find target object')
-                    log('skipping current warp due to missing target object')
-                    warp_is_valid = false                    
-                end
-            end
-            
-            if warp_is_valid == true then
-                local custom_warp_meta = {
-                    target_object=target_object,
-                    object=object,
-                    target_area=target_area,
-                    area_id=area_id
-                }
-                if not custom_warps[area_id] then
-                    custom_warps[area_id] = {}
-                end
-                custom_warps[area_id][object.id] = custom_warp_meta
-                log('added custom warp '..object_id)
-            end
+            add_custom_warp(object, object_id, area_id)   
         end
     end
 end
