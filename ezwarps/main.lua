@@ -26,6 +26,7 @@ local special_animations = {
 
 local landings = {}
 local radius_warps = {}
+local custom_warps = {}
 local player_animations = {}
 local players_in_animations = {}
 local player_interactions = {}
@@ -168,6 +169,28 @@ for i, area_id in next, areas do
             radius_warps[#radius_warps+1] = new_radius_warp
             print('[ezwarps] added radius warp '..object_id)
         end
+
+        if object.type == "Custom Warp" then
+            print('[ezwarps] adding custom warp... '..object_id)
+            --radius warp, activates when you walk in range
+            local target_object = nil
+            local target_area = object.custom_properties["Target Area"]
+            local dont_teleport = object.custom_properties["Dont Teleport"]
+            if not dont_teleport and target_area then
+                target_object = Net.get_object_by_id(target_area, object.custom_properties["Target Object"])
+            end
+            local custom_warp_meta = {
+                target_object=target_object,
+                object=object,
+                target_area=target_area,
+                area_id=area_id
+            }
+            if not custom_warps[area_id] then
+                custom_warps[area_id] = {}
+            end
+            custom_warps[area_id][object.id] = custom_warp_meta
+            print('[ezwarps] added custom warp '..object_id)
+        end
     end
 end
 
@@ -274,16 +297,32 @@ function use_warp(player_id,warp_object,warp_meta)
             local target_object = warp_meta.target_object
             local dont_teleport = warp_object.custom_properties["Dont Teleport"]
             if target_object and not dont_teleport then
-                direction = target_object.custom_properties["Direction"]
+                if target_object.custom_properties["Direction"] then
+                    direction = target_object.custom_properties["Direction"]
+                end
                 arrival_animation_name = target_object.custom_properties["Arrival Animation"]
-                local entry_pos = prepare_player_arrival(player_id,warp_meta.target_object.x,warp_meta.target_object.y,warp_meta.target_object.z,arrival_animation_name)
-                Net.transfer_player(player_id, warp_meta.target_area, warp_in, entry_pos.x, entry_pos.y, entry_pos.z, direction)
+                if arrival_animation_name then
+                    local entry_pos = prepare_player_arrival(player_id,warp_meta.target_object.x,warp_meta.target_object.y,warp_meta.target_object.z,arrival_animation_name)
+                    Net.transfer_player(player_id, warp_meta.target_area, warp_in, entry_pos.x, entry_pos.y, entry_pos.z, direction)
+                else
+                    Net.transfer_player(player_id, warp_meta.target_area, true, target_object.x,target_object.y,target_object.z, direction)
+                    print(player_id, warp_meta.target_area, true, target_object.x, target_object.y,target_object.z, direction)
+                end
             else
                 print('[ezwarps] unable to transfer, no target object')
             end
         end
         player_interactions[player_id] = nil
     end,warp_delay)
+end
+
+function ezwarps.handle_custom_warp(player_id, object_id)
+    if not ezwarps.player_is_in_animation(player_id) then
+        local player_area = Net.get_player_area(player_id)
+        local object = Net.get_object_by_id(player_area, object_id)
+        local custom_warp_meta = custom_warps[player_area][object_id]
+        use_warp(player_id,object,custom_warp_meta)
+    end
 end
 
 function ezwarps.handle_player_join(player_id)

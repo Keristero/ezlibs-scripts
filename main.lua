@@ -25,6 +25,14 @@ function handle_battle_results(player_id, stats)
     end
 end
 
+function handle_custom_warp(player_id, object_id)
+    for i,plugin in ipairs(plugins)do
+        if plugin.handle_custom_warp then
+            plugin.handle_custom_warp(player_id, object_id)
+        end
+    end
+end
+
 function handle_player_move(player_id, x, y, z)
     for i,plugin in ipairs(plugins)do
         if plugin.handle_player_move then
