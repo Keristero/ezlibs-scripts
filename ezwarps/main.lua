@@ -330,8 +330,8 @@ function use_warp(player_id,warp_object,warp_meta)
                     local entry_pos = prepare_player_arrival(player_id,warp_meta.target_object.x,warp_meta.target_object.y,warp_meta.target_object.z,arrival_animation_name)
                     Net.transfer_player(player_id, warp_meta.target_area, warp_in, entry_pos.x, entry_pos.y, entry_pos.z, direction)
                 else
-                    Net.transfer_player(player_id, warp_meta.target_area, true, target_object.x,target_object.y+target_object.height/2,target_object.z, direction)                    
-                    print(player_id, warp_meta.target_area, true, target_object.x, target_object.y+target_object.height/2,target_object.z, direction)
+                    Net.transfer_player(player_id, warp_meta.target_area, true, target_object.x+target_object.width,target_object.y+target_object.height,target_object.z, direction)                    
+                    print(player_id, warp_meta.target_area, true, target_object.x+target_object.width, target_object.y+target_object.height,target_object.z, direction)
                 end
             else
                 log('unable to transfer, no target object')
