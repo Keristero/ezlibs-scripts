@@ -7,6 +7,7 @@
     - `server/memory/area/`
     - `server/memory/player/`
     - `server/encounters/`
+    - `server/scripts/events/`
 
 # Contents
 
@@ -180,7 +181,9 @@ or you can use wildcards which will always behave as the current time for that c
 - useful for starting conversations with NPCS that are behind objects like counters
 
 ### DialogueEvents
-- events added through the eznpcs entry script will be activated when a player reaches a dialogue during a conversation with a matching `Event Name` custom property
+- you can add custom logic for dialogues using `eznpcs.add_event(event_object)`
+- eznpcs will automatically try and load the file `/server/scripts/events/eznpcs_events.lua` for this purpose, so create that file and add events from there
+- loaded events will activated when a player reaches a dialogue during a conversation with a matching `Event Name` custom property
 - the action of the event is a callback which allows for any and all custom interactions.
 - callback parameters:
     - `npc` table
@@ -202,6 +205,9 @@ or you can use wildcards which will always behave as the current time for that c
 
 *Here is an example dialogue event where a sound effect plays and the player enjoys gravy*
 ```lua
+local sfx = {
+    recover='/server/assets/ezlibs-assets/sfx/recover.ogg',
+}
 local some_event = {
     name="Drink Gravy",
     action=function (npc,player_id,dialogue,relay_object)
@@ -217,6 +223,7 @@ local some_event = {
 }
 eznpcs.add_event(some_event)
 ```
+if you add this example to `/server/scripts/events/eznpcs_events.lua` you should see it load when you start the server
 ### Waypoint Events
 - coming soon
 
