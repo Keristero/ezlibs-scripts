@@ -10,6 +10,7 @@ local generic_npc_mug_animation_path = npc_asset_folder..'mug/mug.animation'
 local npcs = {}
 local events = {}
 local textbox_responses = {}
+local current_player_dialogue = {}
 local npc_required_properties = {"Direction","Asset Name"}
 local object_cache = {}
 local cache_types = {"NPC","Waypoint","Dialogue"}
@@ -43,6 +44,10 @@ local cache_types = {"NPC","Waypoint","Dialogue"}
 --TODO load all waypoints / dialogues on server start and delete them from the map to save bandwidth
 
 function DoDialogue(npc,player_id,dialogue,relay_object)
+    if current_player_dialogue[player_id] == dialogue.id then
+        return --player is already in this dialogue, anti spam protection
+    end
+    current_player_dialogue[player_id] = dialogue.id
     local area_id = Net.get_player_area(player_id)
     local dialogue_type = dialogue.custom_properties["Dialogue Type"]
     local event_name = dialogue.custom_properties["Event Name"]
@@ -285,6 +290,7 @@ end
 
 function EndConversation(player_id)
     textbox_responses[player_id] = nil
+    current_player_dialogue[player_id] = nil
 end
 
 function GetTableLength(tbl)
