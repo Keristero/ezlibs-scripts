@@ -6,6 +6,8 @@ local eznpcs = {}
 local placeholder_to_botid = {}
 
 local npc_asset_folder = '/server/assets/ezlibs-assets/eznpcs/'
+local custom_events_script_path = 'scripts/events/eznpcs_events'
+local custom_events_script_loaded = false
 local generic_npc_mug_animation_path = npc_asset_folder..'mug/mug.animation'
 local npcs = {}
 local events = {}
@@ -42,6 +44,20 @@ local cache_types = {"NPC","Waypoint","Dialogue"}
 --  Event Name (npc,player_id)
 
 --TODO load all waypoints / dialogues on server start and delete them from the map to save bandwidth
+
+function LoadEventsFile()
+    local status, err = pcall(function () require(custom_events_script_path) end)
+    if status == true then
+        require(custom_events_script_path)
+    else
+        if string.find(err,'not found') then
+            print("[eznpcs] no custom events script found at "..custom_events_script_path)
+        else
+            print("[eznpcs] error loading custom events script "..custom_events_script_path)
+            print("[eznpcs] reason "..err)
+        end
+    end
+end
 
 function DoDialogue(npc,player_id,dialogue,relay_object)
     if current_player_dialogue[player_id] == dialogue.id then
@@ -488,7 +504,11 @@ end
 
 function AddEvent(event_object)
     if event_object.name and event_object.action then
+        if events[event_object.name] then
+            print('[eznpcs] WARNING event '..event_object.name..' already exists and will be replaced')
+        end
         events[event_object.name] = event_object
+        print('[eznpcs] added event '..event_object.name)
     else
         print('[eznpcs] Cant add invalid event, events need a name and action {}')
     end
@@ -539,6 +559,10 @@ function eznpcs.handle_actor_interaction(player_id,actor_id)
     return ( OnActorInteraction(player_id,actor_id) )
 end
 function eznpcs.on_tick(delta_time)
+    if not custom_events_script_loaded then
+        custom_events_script_loaded = true
+        LoadEventsFile()
+    end
     for bot_id, npc in pairs(npcs) do
         if npc.on_tick then
             npc.on_tick.action(npc,delta_time)

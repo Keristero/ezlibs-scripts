@@ -2,6 +2,7 @@ local ezwarps = require('scripts/ezlibs-scripts/ezwarps/main')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 
 local ezencounters = {}
+local players_in_encounters = {}
 local player_last_position = {}
 local player_steps_since_encounter = {}
 
@@ -56,7 +57,7 @@ ezencounters.increment_steps_since_encounter = function (player_id)
     else
         player_steps_since_encounter[player_id] = player_steps_since_encounter[player_id] + 1
     end
-    print('[ezencounters] steps since encounter:',player_steps_since_encounter[player_id])
+    --print('[ezencounters] steps since encounter:',player_steps_since_encounter[player_id])
     if encounter_table then
         if player_steps_since_encounter[player_id] >= encounter_table.minimum_steps_before_encounter then
             ezencounters.try_random_encounter(player_id,encounter_table)
@@ -107,6 +108,7 @@ ezencounters.begin_encounter = function (player_id,encounter_info)
     print('beginning encounter for',player_id)
     Net.initiate_encounter(player_id, encounter_info.path,encounter_info)
     ezencounters.clear_tiles_since_encounter(player_id)
+    players_in_encounters[player_id] = {encounter_info=encounter_info}
 end
 
 ezencounters.clear_tiles_since_encounter = function (player_id)
@@ -117,11 +119,19 @@ ezencounters.clear_last_position = function (player_id)
     print('[ezencounters] clearing last position')
     player_last_position[player_id] = nil
     ezencounters.clear_tiles_since_encounter(player_id)
+    players_in_encounters[player_id] = nil
 end
 
 ezencounters.handle_battle_results = function(player_id, stats)
     Net.set_player_health(player_id, stats.health)
     Net.set_player_emotion(player_id, stats.emotion)
+    if players_in_encounters[player_id] then
+        local player_encounter = players_in_encounters[player_id]
+        if player_encounter.encounter_info.results_callback then
+            player_encounter.encounter_info.results_callback(player_id,player_encounter.encounter_info,stats)
+        end
+        players_in_encounters[player_id] = nil
+    end
     -- stats = { health: number, score: number, time: number, ran: bool, emotion: number, turns: number, npcs: { id: String, health: number }[] }
 end
 
