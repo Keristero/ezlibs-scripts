@@ -1,15 +1,14 @@
+local ezencounters = require('scripts/ezlibs-scripts/ezencounters/main')
 local eznpcs = require('scripts/ezlibs-scripts/eznpcs/eznpcs')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 local ezmystery = require('scripts/ezlibs-scripts/ezmystery')
 local ezweather = require('scripts/ezlibs-scripts/ezweather')
 local ezwarps = require('scripts/ezlibs-scripts/ezwarps/main')
-
---local ezfarms = require('scripts/ezlibs-scripts/ezfarms')
---local ezencounters = require('scripts/ezlibs-scripts/ezencounters/main')
+local ezfarms = require('scripts/ezlibs-scripts/ezfarms')
 
 --local plugins = {ezweather,eznpcs,ezmemory,ezmystery,ezfarms,ezwarps,ezencounters}
 
-local plugins = {ezweather,eznpcs,ezmemory,ezmystery,ezwarps}
+local plugins = {ezweather,eznpcs,ezmemory,ezmystery,ezwarps,ezencounters,ezfarms}
 
 local sfx = {
     hurt='/server/assets/ezlibs-assets/sfx/hurt.ogg',

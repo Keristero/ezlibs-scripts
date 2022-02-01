@@ -31,6 +31,9 @@ local function should_record_step(player_id)
     if not player_last_position[player_id] then
         return false
     end
+    if Net.is_player_battling(player_id) then
+        return false
+    end
     if ezwarps.player_is_in_animation(player_id) then
         return false
     end
@@ -57,7 +60,6 @@ ezencounters.increment_steps_since_encounter = function (player_id)
     else
         player_steps_since_encounter[player_id] = player_steps_since_encounter[player_id] + 1
     end
-    --print('[ezencounters] steps since encounter:',player_steps_since_encounter[player_id])
     if encounter_table then
         if player_steps_since_encounter[player_id] >= encounter_table.minimum_steps_before_encounter then
             ezencounters.try_random_encounter(player_id,encounter_table)
