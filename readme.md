@@ -326,26 +326,28 @@ encounter options:
     - where to spawn each enemy, 0 = no enemy, to spawn an enemy use the index of the enemy you listed in the enemies table you provided (1 = enemy at index 1 in your enemies table)
 - tiles (grid)
     - defaults to all normal panels
-    1. `normal`
-    2. `cracked`
-    3. `broken`
-    4. `up`
-    5. `down`
-    6. `left`
-    7. `right`
-    8. `empty`
-    9. `grass`
-    10. `hidden`
-    11. `holy`
-    12. `ice`
-    13. `lava`
-    14. `poison`
-    15. `volcano`
+        1. `normal`
+        2. `cracked`
+        3. `broken`
+        4. `up`
+        5. `down`
+        6. `left`
+        7. `right`
+        8. `empty`
+        9. `grass`
+        10. `hidden`
+        11. `holy`
+        12. `ice`
+        13. `lava`
+        14. `poison`
+        15. `volcano`
+
 - teams (grid)
     - defaults to the usual battle field
     0. neutral team
     1. blue team
     2. red team
+
 - obstacles (table)
     - ordered list of all the obstacles you want to include
     - here are the included obstacles
@@ -353,13 +355,17 @@ encounter options:
         - Rock
         - Coffin
         - BlastCube
+
 - obstacle_positions(table)
     - like enemy_positions, but for obstacles
+
 - player_positions(table)
     - like enemy_positions, but for players.
+
 - freedom_mission(table)
     - turn_count (number)
     - player_can_flip (boolean)
+
 - music (table)
     - path (string), included options:
         - `bcc_battle_xg.mid`
