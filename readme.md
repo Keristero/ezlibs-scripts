@@ -307,11 +307,91 @@ handle enemy encounters, and trigger random ones from a table for each map
 create a lua file for each map with the same name as the tiled map (`default.lua` for example)
 and put the file into the `server/encounters/` (create this folder if it does not exist)
 
+encounter options:
+- path (string)
+    - path to the main encounter file, usually this will be the same as in the examples, but if you want to create your own .zip you can specify it here, note you will need to copy/modify the code from the provided ezencounters.zip
+- weight (number)
+    - relative chance of this particular encounter being picked from table for this area, if one encounter has weight 10 and another has weight 20, the weight 20 one is twice as likely to be picked.
+- enemies (table)
+    - ordered list of all the enemies you want to include in the battle
+    - here are all the mobs and available ranks included by default in ezencounters.zip
+        - `Mettaur` (1)
+        - `Champy` (1,2)
+        - `Chimpy` (1)
+        - `Chumpy` (1)
+        - `RareChampy` (1)
+        - `Gunner` (1)
+        - `BigBrute` (1)
+- positions (grid)
+    - where to spawn each enemy, 0 = no enemy, to spawn an enemy use the index of the enemy you listed in the enemies table you provided (1 = enemy at index 1 in your enemies table)
+- tiles (grid)
+    - defaults to all normal panels
+    1. `normal`
+    2. `cracked`
+    3. `broken`
+    4. `up`
+    5. `down`
+    6. `left`
+    7. `right`
+    8. `empty`
+    9. `grass`
+    10. `hidden`
+    11. `holy`
+    12. `ice`
+    13. `lava`
+    14. `poison`
+    15. `volcano`
+- teams (grid)
+    - defaults to the usual battle field
+    0. neutral team
+    1. blue team
+    2. red team
+- obstacles (table)
+    - ordered list of all the obstacles you want to include
+    - here are the included obstacles
+        - RockCube
+        - Rock
+        - Coffin
+        - BlastCube
+- obstacle_positions(table)
+    - like enemy_positions, but for obstacles
+- player_positions(table)
+    - like enemy_positions, but for players.
+- freedom_mission(table)
+    - turn_count (number)
+    - player_can_flip (boolean)
+- music (table)
+    - path (string), included options:
+        - `bcc_battle_xg.mid`
+        - `bcc_battle.mid`
+        - `bn1_battle_xg.mid`
+        - `bn1_battle.mid`
+        - `bn1_boss_xg.mid`
+        - `bn1_boss.mid`
+        - `bn2_battle.mid`
+        - `bn2_boss.mid`
+        - `bn3_battle.mid`
+        - `bn3_boss.mid`
+        - `bn3_tournament.mid`
+        - `bn4_battle.mid`
+        - `bn4_boss.mid`
+        - `bn4_tournament.mid`
+        - `bn5_battle_xg.mid`
+        - `bn5_battle.mid`
+        - `bn5_boss_xg.mid`
+        - `bn5_boss.mid`
+        - `bn6_battle_xg.mid`
+        - `bn6_battle.mid`
+        - `bn6_boss_xg.mid`
+        - `bn6_boss.mid`
+        - `bn45_battle_xg.mid`
+        - `bn45_tournament_final.mid`
+
 here is an example of the contents, in this case just one potential encounter layout with some mettaurs and a champy
 
 ```lua
 local encounter1 = {
-    path="/server/assets/ezlibs-assets/ezencounters/ezencounters_bundle.zip",
+    path="/server/assets/ezlibs-assets/ezencounters/ezencounters.zip",
     weight=10,
     enemies = {
         {name="Mettaur",rank=1},
@@ -328,6 +408,59 @@ local encounter1 = {
 return {
     minimum_steps_before_encounter=400,
     encounter_chance_per_step=0.01,
+    encounters={encounter1}
+}
+```
+
+here is another example with every optional field included
+```lua
+local encounter1 = {
+    path="/server/assets/ezlibs-assets/ezencounters/ezencounters.zip",
+    weight=10,
+    enemies = {
+        {name="BigBrute",rank=1,max_hp=500,starting_hp=500,nickname="Doggie"},
+        {name="Gunner",rank=1},
+    },
+    positions = {
+        {0,0,0,0,0,2},
+        {0,0,0,0,1,0},
+        {0,0,0,0,0,2}
+    },
+    tiles = {
+        {1,1,9,9,1,1},
+        {1,1,9,9,1,1},
+        {1,1,9,9,1,1}
+    },
+    teams = {
+        {2,2,0,0,1,1},
+        {2,2,0,0,1,1},
+        {2,2,0,0,1,1}
+    },
+    obstacles = {
+        {name="RockCube"},
+    },
+    obstacle_positions = {
+        {0,0,1,1,0,0},
+        {0,0,1,1,0,0},
+        {0,0,1,1,0,0}
+    },
+    player_positions = {
+        {0,0,0,0,0,0},
+        {1,0,0,0,0,0},
+        {0,0,0,0,0,0}
+    },
+    freedom_mission={
+        turn_count=5,
+        player_can_flip=true
+    },
+    music={
+        path="bcc_battle.mid"
+    }
+}
+
+return {
+    minimum_steps_before_encounter=50,
+    encounter_chance_per_step=0.1,
     encounters={encounter1}
 }
 ```
