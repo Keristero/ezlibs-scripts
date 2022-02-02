@@ -317,11 +317,20 @@ encounter options:
     - here are all the mobs and available ranks included by default in ezencounters.zip
         - `Mettaur` (1)
         - `Champy` (1,2)
-        - `Chimpy` (1)
-        - `Chumpy` (1)
-        - `RareChampy` (1)
+        - `Chimpy` (1) ~Author jamesking#9809
+        - `Chumpy` (1) ~Author jamesking#9809
+        - `RareChampy` (1) ~Author jamesking#9809
         - `Gunner` (1)
         - `BigBrute` (1)
+        - `Cactikil` (1,5) ~Author Konstinople#7692
+        - `Cactroll` (1,5) ~Author Konstinople#7692
+        - `Cacter` (1,5) ~Author Konstinople#7692
+        - `Powie` (1,5) ~Author Konstinople#7692
+        - `Powie2` (1,5) ~Author Konstinople#7692
+        - `Powie3` (1,5) ~Author Konstinople#7692
+        - `Spikey` (1,2,3) ~Author DawnOwl#5358
+        - `Canodumb` (1,2,3) ~Author Konstinople#7692
+        - `Canosmart` (1) ~Author DawnOwl#5358
 - positions (grid)
     - where to spawn each enemy, 0 = no enemy, to spawn an enemy use the index of the enemy you listed in the enemies table you provided (1 = enemy at index 1 in your enemies table)
 - tiles (grid)
