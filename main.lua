@@ -104,10 +104,10 @@ function handle_player_join(player_id)
     end
 end
 
-function handle_actor_interaction(player_id, actor_id)
+function handle_actor_interaction(player_id, actor_id, button)
     for i,plugin in ipairs(plugins)do
         if plugin.handle_actor_interaction then
-            plugin.handle_actor_interaction(player_id,actor_id)
+            plugin.handle_actor_interaction(player_id,actor_id, button)
         end
     end
 end
@@ -127,10 +127,10 @@ function handle_player_disconnect(player_id)
         end
     end
 end
-function handle_object_interaction(player_id, object_id)
+function handle_object_interaction(player_id, object_id, button)
     for i,plugin in ipairs(plugins)do
         if plugin.handle_object_interaction then
-            plugin.handle_object_interaction(player_id,object_id)
+            plugin.handle_object_interaction(player_id,object_id, button)
         end
     end
 end
