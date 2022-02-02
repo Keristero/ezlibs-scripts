@@ -45,20 +45,6 @@ local cache_types = {"NPC","Waypoint","Dialogue"}
 
 --TODO load all waypoints / dialogues on server start and delete them from the map to save bandwidth
 
-function LoadEventsFile()
-    local status, err = pcall(function () require(custom_events_script_path) end)
-    if status == true then
-        require(custom_events_script_path)
-    else
-        if string.find(err,'not found') then
-            print("[eznpcs] no custom events script found at "..custom_events_script_path)
-        else
-            print("[eznpcs] error loading custom events script "..custom_events_script_path)
-            print("[eznpcs] reason "..err)
-        end
-    end
-end
-
 function DoDialogue(npc,player_id,dialogue,relay_object)
     if current_player_dialogue[player_id] == dialogue.id then
         return --player is already in this dialogue, anti spam protection
@@ -220,7 +206,7 @@ function CreateBotFromObject(area_id,object_id)
 
     local npc = CreateNPC(area_id,npc_asset_name,x,y,z,direction,placeholder_object.name,npc_animation_name,npc_mug_animation_name)
     placeholder_to_botid[tostring(object_id)] = npc.bot_id
-    print('[eznpcs] added placeholder mapping '..object_id..' to '..npc.bot_id)
+    --print('[eznpcs] added placeholder mapping '..object_id..' to '..npc.bot_id)
 
     if placeholder_object.custom_properties["Dialogue Type"] then
         --If the placeholder has Chat text, add behaviour to have it respond to interactions
@@ -249,9 +235,9 @@ function CreateNPC(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mu
         mug_animation_path = npc_asset_folder..'mug/'..mug_animation_name..".animation"
     end
     --Log final paths
-    print('[eznpcs] texture path: '..texture_path)
-    print('[eznpcs] animation path: '..animation_path)
-    print('[eznpcs] mug animation path: '..mug_animation_path)
+    --print('[eznpcs] texture path: '..texture_path)
+    --print('[eznpcs] animation path: '..animation_path)
+    --print('[eznpcs] mug animation path: '..mug_animation_path)
     --Create bot
     local npc_data = {
         asset_name=asset_name,
@@ -269,12 +255,10 @@ function CreateNPC(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mu
         size=0.2,
         speed=1,
     }
-    print('creating bot')
     local lastBotId = Net.create_bot(npc_data)
-     print('creating bot')
     npc_data.bot_id = lastBotId
     npcs[lastBotId] = npc_data
-    print('[eznpcs] created npc '..lastBotId..' at ('..x..','..y..','..z..')')
+    print('[eznpcs] created npc '..name..' id:'..lastBotId..' at ('..x..','..y..','..z..')')
     return npc_data
 end
 
@@ -561,7 +545,7 @@ end
 function eznpcs.on_tick(delta_time)
     if not custom_events_script_loaded then
         custom_events_script_loaded = true
-        LoadEventsFile()
+        helpers.safe_require(custom_events_script_path)
     end
     for bot_id, npc in pairs(npcs) do
         if npc.on_tick then

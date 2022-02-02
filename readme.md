@@ -510,3 +510,18 @@ ezweather.clear_weather_in_area(area_id)
 
 # ezfarms
 a large plugin which adds a harvest moon style farming system to your server. but it is a pain to set up so disable it by removing it from the start of main.lua (and the plugin list in main.lua)
+
+# custom plugin
+If you need to add your own logic that interacts with ezlibs outside of dialogue events / encounter results - 
+create this file `/server/scripts/ezlibs-custom/custom.lua` and you can add your own custom plugin which will be automatically added by ezlibs main
+```lua
+local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
+
+local custom = {}
+
+custom.on_tick = function (dt)
+    print('custom plugin!')
+end
+
+return custom
+```

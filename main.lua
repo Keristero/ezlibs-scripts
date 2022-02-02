@@ -1,3 +1,4 @@
+local helpers = require('scripts/ezlibs-scripts/helpers')
 local ezencounters = require('scripts/ezlibs-scripts/ezencounters/main')
 local eznpcs = require('scripts/ezlibs-scripts/eznpcs/eznpcs')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
@@ -16,6 +17,12 @@ local sfx = {
     recover='/server/assets/ezlibs-assets/sfx/recover.ogg',
     card_error='/server/assets/ezlibs-assets/ezfarms/card_error.ogg'
 }
+
+local custom_script_path = 'scripts/ezlibs-custom/custom'
+local custom_plugin = helpers.safe_require(custom_script_path)
+if custom_plugin then
+    plugins[#plugins+1] = custom_plugin
+end
 
 eznpcs.load_npcs()
 

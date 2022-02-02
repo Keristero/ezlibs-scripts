@@ -50,4 +50,18 @@ function helpers.get_object_by_id_cached(area_id,object_id,object_cache,cache_ty
     end
 end
 
+function helpers.safe_require(script_path)
+    local status, err = pcall(function () require(script_path) end)
+    if status == true then
+        return require(script_path)
+    else
+        if string.find(err,'not found') then
+            print("[eznpcs] no script found at "..script_path)
+        else
+            print("[eznpcs] error loading script "..script_path)
+            print("[eznpcs] reason "..err)
+        end
+    end
+end
+
 return helpers
