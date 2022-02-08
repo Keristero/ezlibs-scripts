@@ -132,6 +132,17 @@ function collect_datum(player_id,object,datum_id_override)
         ezmemory.give_player_item(player_id,name,1)
         Net.message_player(player_id,"Got "..name.."!")
         Net.play_sound_for_player(player_id,sfx.item_get)
+    elseif object.custom_properties["Type"] == "item" then
+        local name = object.custom_properties["Name"]
+        if not name then
+            print('[ezmystery] '..object.id..' has no name')
+            return
+        end
+        --Give the player an item
+        ezmemory.create_or_update_item(name,"",false)
+        ezmemory.give_player_item(player_id,name,1)
+        Net.message_player(player_id,"Got "..name.."!")
+        Net.play_sound_for_player(player_id,sfx.item_get)
     elseif object.custom_properties["Type"] == "money" then
         local amount = object.custom_properties["Amount"]
         if not amount then
