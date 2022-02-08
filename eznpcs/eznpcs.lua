@@ -1,5 +1,6 @@
 local Direction = require("scripts/ezlibs-scripts/direction")
 local helpers = require('scripts/ezlibs-scripts/helpers')
+local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 local math = require('math')
 
 local eznpcs = {}
@@ -65,16 +66,20 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
     local message = nil
     local next_dialogue_id = nil
     if event_name then
-        next_dialogue_info = events[event_name].action(npc,player_id,dialogue,relay_object)
-        if next_dialogue_info then
-            if next_dialogue_info.id then
-                if not next_dialogue_info.wait_for_response then
-                    local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_info.id,object_cache,cache_types)
-                    DoDialogue(npc,player_id,dialogue,relay_object)
-                    return
+        if events[event_name] then
+            local next_dialogue_info = events[event_name].action(npc,player_id,dialogue,relay_object)
+            if next_dialogue_info then
+                if next_dialogue_info.id then
+                    if not next_dialogue_info.wait_for_response then
+                        local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_info.id,object_cache,cache_types)
+                        DoDialogue(npc,player_id,dialogue,relay_object)
+                        return
+                    end
+                    next_dialogue_id = next_dialogue_info.id
                 end
-                next_dialogue_id = next_dialogue_info.id
             end
+        else
+            print("[eznpcs] event "..event_name.." was not found, are you sure you added it?")
         end
     end
     if dialogue_type == nil then
@@ -91,7 +96,7 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
 
     local dialogue_texts = ExtractNumberedProperties(dialogue,"Text ")
     local next_dialogues = ExtractNumberedProperties(dialogue,"Next ")
-
+    
     if dialogue_type == "first" or  dialogue_type == "question" then
         message = dialogue_texts[1]
         local next_id = FirstValueFromTable(next_dialogues)
@@ -102,6 +107,36 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
         local rnd_text_index = math.random( #dialogue_texts)
         message = dialogue_texts[rnd_text_index]
         next_dialogue_id = next_dialogues[rnd_text_index] or next_dialogues[1]
+    end
+
+    if dialogue_type == "itemcheck" then
+        local required_item = dialogue.custom_properties["Required Item"]
+        if required_item ~= nil then
+            local required_amount = dialogue.custom_properties["Required Amount"]
+            if required_amount == nil then
+                required_amount = 1
+            end
+            local take_item = dialogue.custom_properties["Take Item"] == "true"
+            if required_item == "money" then
+                if ezmemory.get_player_money(player_id) >= tonumber(required_amount) then
+                    next_dialogue_id = next_dialogues[1]
+                    if take_item then
+                        ezmemory.spend_player_money(player_id,required_amount)
+                    end
+                else
+                    next_dialogue_id = next_dialogues[2]
+                end
+            else
+                if ezmemory.count_player_item(player_id, required_item) >= tonumber(required_amount) then
+                    next_dialogue_id = next_dialogues[1]
+                    if take_item then
+                        ezmemory.remove_player_item(player_id, required_item, required_amount)
+                    end
+                else
+                    next_dialogue_id = next_dialogues[2]
+                end
+            end
+        end
     end
 
     --date based events
@@ -126,8 +161,9 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
             end
         end
     end
-
-    Net.set_bot_direction(npc.bot_id, Direction.from_points(npc, player_pos))
+    if not npc.dont_face_player then
+        Net.set_bot_direction(npc.bot_id, Direction.from_points(npc, player_pos))
+    end
 
     if message == nil and next_dialogue_id ~= nil then
         --If we know what dialogue is next but we have no message to send
@@ -162,6 +198,8 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
                     local area_id = Net.get_player_area(player_id)
                     local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_id,object_cache,cache_types)
                     DoDialogue(npc,player_id,dialogue,relay_object)
+                else
+                    Net.set_bot_direction(npc.bot_id, npc.direction)
                 end
             end
         }
@@ -202,9 +240,10 @@ function CreateBotFromObject(area_id,object_id)
     local npc_asset_name = placeholder_object.custom_properties["Asset Name"]
     local npc_animation_name = placeholder_object.custom_properties["Animation Name"] or false
     local npc_mug_animation_name = placeholder_object.custom_properties["Mug Animation Name"] or false
+    local npc_turns_to_talk = placeholder_object.custom_properties["Dont Face Player"] == "true"
     local direction = placeholder_object.custom_properties.Direction
 
-    local npc = CreateNPC(area_id,npc_asset_name,x,y,z,direction,placeholder_object.name,npc_animation_name,npc_mug_animation_name)
+    local npc = CreateNPC(area_id,npc_asset_name,x,y,z,direction,placeholder_object.name,npc_animation_name,npc_mug_animation_name,npc_turns_to_talk)
     placeholder_to_botid[tostring(object_id)] = npc.bot_id
     --print('[eznpcs] added placeholder mapping '..object_id..' to '..npc.bot_id)
 
@@ -222,7 +261,7 @@ function CreateBotFromObject(area_id,object_id)
     end
 end
 
-function CreateNPC(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mug_animation_name)
+function CreateNPC(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mug_animation_name,npc_turns_to_talk)
     local texture_path = npc_asset_folder.."sheet/"..asset_name..".png"
     local animation_path = npc_asset_folder.."sheet/"..asset_name..".animation"
     local mug_animation_path = generic_npc_mug_animation_path
@@ -233,6 +272,9 @@ function CreateNPC(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mu
     end
     if mug_animation_name then
         mug_animation_path = npc_asset_folder..'mug/'..mug_animation_name..".animation"
+    end
+    if npc_turns_to_talk == nil then
+        npc_turns_to_talk = true
     end
     --Log final paths
     --print('[eznpcs] texture path: '..texture_path)
@@ -254,6 +296,7 @@ function CreateNPC(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mu
         solid=true,
         size=0.2,
         speed=1,
+        dont_face_player=npc_turns_to_talk,
     }
     local lastBotId = Net.create_bot(npc_data)
     npc_data.bot_id = lastBotId

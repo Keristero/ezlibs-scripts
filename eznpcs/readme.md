@@ -24,6 +24,8 @@ add objects to your map with Type=`NPC` on an object layer above the tile layer 
         - by including this property, this npc will follow waypoints
         - Indicates the first waypoint that the npc should move to
         - see the section on [`Waypoints`](#Waypoints)
+    - Dont Face Player: boolean
+        - by including this property and setting it to true, the npc will not turn to face the player when talked to.
 
 
 
@@ -45,6 +47,12 @@ any object can be a dialogue, you can use these custom properties to define what
             - if the current time is before `Date`, `Text 1` will be displayed, otherwise `Text 2`, it will go to the respective `Next x` dialogue node afterwards
         - `after`
             - same as `before`, checks if current time is after `Date`
+        - `itemcheck`
+            - checks to see if the player has an item specified by the `Required Item` custom property
+            - if the `Required Amount`(number) custom property exists, the player will need that many of the item, otherwise they only need 1
+            - if `Required Item` is set to `money`, the player's money will be compared instead of an item.
+            - if `Take Item`(boolean) is set to `true`, the items/money will also be taken from the player after passing this check.
+
         - `none`
             - usually used with `Event Name`, no dialogue, but the event will still be triggered
             
