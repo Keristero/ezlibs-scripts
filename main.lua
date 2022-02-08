@@ -34,6 +34,22 @@ function handle_battle_results(player_id, stats)
     end
 end
 
+function handle_shop_purchase(player_id, item_name)
+    for i,plugin in ipairs(plugins)do
+        if plugin.handle_shop_purchase then
+            plugin.handle_shop_purchase(player_id, item_name)
+        end
+    end
+end
+
+function handle_shop_close(player_id)
+    for i,plugin in ipairs(plugins)do
+        if plugin.handle_shop_close then
+            plugin.handle_shop_close(player_id)
+        end
+    end
+end
+
 function handle_custom_warp(player_id, object_id)
     for i,plugin in ipairs(plugins)do
         if plugin.handle_custom_warp then
