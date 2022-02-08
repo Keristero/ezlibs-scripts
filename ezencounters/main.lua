@@ -125,11 +125,6 @@ ezencounters.clear_last_position = function (player_id)
 end
 
 ezencounters.handle_battle_results = function(player_id, stats)
-    if stats.emotion == 1 then
-        Net.set_player_emotion(player_id, stats.emotion)
-    else
-        Net.set_player_emotion(player_id, 0)
-    end
     if players_in_encounters[player_id] then
         local player_encounter = players_in_encounters[player_id]
         if player_encounter.encounter_info.results_callback then
