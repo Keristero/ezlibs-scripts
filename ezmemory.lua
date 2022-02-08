@@ -66,6 +66,37 @@ for i, area_id in ipairs(net_areas) do
     end)
 end
 
+local function update_player_health(player_id)
+    local area_id = Net.get_player_area(player_id)
+    local forced_base_hp = tonumber(Net.get_area_custom_property(area_id, "Forced Base HP"))
+    local honor_hp_memory_rules = Net.get_area_custom_property(area_id, "Honor HPMem") == "true"
+    local honor_saved_hp = Net.get_area_custom_property(area_id, "Honor Saved HP") == "true"
+
+    --first, load the players current health, this will be based on the player avatar unless it has already been modified
+    local max_hp = Net.get_player_max_health(player_id)
+    local hp = Net.get_player_health(player_id)
+
+    --if we honor saved hp, load the saved hp from memory
+    if honor_saved_hp then
+        max_hp = ezmemory.get_player_max_health(player_id)
+        hp = ezmemory.get_player_health(player_id)
+    end
+
+    --if we force base hp, set the max hp down to base
+    if forced_base_hp and forced_base_hp > 0 then
+        max_hp = math.min(max_hp,forced_base_hp)
+    end
+
+    --if we honor mystery data hp increases, calculate the modified max hp
+    if honor_hp_memory_rules then
+        max_hp = ezmemory.calculate_player_modified_max_hp(player_id,max_hp,20,"MaxHP")
+    end
+
+    Net.set_player_max_health(player_id,max_hp)
+    hp = math.min(hp,max_hp)
+    Net.set_player_health(player_id,hp)
+end
+
 function ezmemory.get_item_info(item_id)
     if items[item_id] then
         return items[item_id]
@@ -294,8 +325,7 @@ function ezmemory.handle_player_join(player_id)
             end
         end
     end
-    --set the HP now that we have the HPMems
-    ezmemory.set_player_max_health(player_id)
+    update_player_health(player_id)
     --Send player money
     Net.set_player_money(player_id, player_memory.money)
     --update join count
@@ -325,32 +355,60 @@ function ezmemory.handle_player_transfer(player_id)
     print('[ezmemory] hid '..#player_area_memory.hidden_objects..' objects from '..player_name)
 end
 
-function ezmemory.set_player_max_health(player_id)
-    if isChangeHP then
-        local amount = ezmemory.count_player_item(player_id, "HPMem")
-        local new_max_hp = (100 + 20 * amount)
-        local player_current_health = Net.get_player_health(player_id)
-        local new_hp = math.min(player_current_health + 20, new_max_hp)
-        Net.set_player_health(player_id, new_hp)
-        Net.set_player_max_health(player_id, new_max_hp)
-    end
+function ezmemory.calculate_player_modified_max_hp(player_id,base_max_hp,hp_memory_modifier,hp_memory_item)
+    local hp_mem_count = ezmemory.count_player_item(player_id, hp_memory_item)
+    local new_max_hp = (base_max_hp + hp_memory_modifier * hp_mem_count)
+    return new_max_hp
 end
 
-ezmemory.set_player_avatar_health = function(player_id, details)
-    if isChangeHP then
-        local amount = ezmemory.count_player_item(player_id, "HPMem")
-        local new_max_hp = (100 + 20 * amount)
-        local player_current_health = Net.get_player_health(player_id)
-        local new_hp = math.min(player_current_health, new_max_hp)
-        Net.set_player_health(player_id, new_hp)
-        Net.set_player_max_health(player_id, new_max_hp)
+function ezmemory.get_player_max_health(player_id)
+    local safe_secret = helpers.get_safe_player_secret(player_id)
+    local player_memory = ezmemory.get_player_memory(safe_secret)
+    return player_memory.max_health
+end
+
+function ezmemory.get_player_health(player_id)
+    local safe_secret = helpers.get_safe_player_secret(player_id)
+    local player_memory = ezmemory.get_player_memory(safe_secret)
+    return player_memory.health
+end
+
+function ezmemory.set_player_max_health(player_id, new_max_health, should_heal_by_increase)
+    local safe_secret = helpers.get_safe_player_secret(player_id)
+    local player_memory = ezmemory.get_player_memory(safe_secret)
+
+    local current_health = player_memory.health
+    local max_health = player_memory.max_health
+
+    local new_health = current_health
+    --If max health is raised and flag is true, add the increase in max health to current health too
+    if new_max_health > max_health and should_heal_by_increase then
+        local max_hp_increase = new_max_health-max_health
+        new_health = current_health + max_hp_increase
     end
+
+    local new_health = math.min(new_health, new_max_health)
+    player_memory.health = new_health
+    player_memory.max_health = max_health
+    ezmemory.save_player_memory(safe_secret)
+
+    update_player_health()
+end
+
+ezmemory.set_player_health = function(player_id, new_health)
+    local safe_secret = helpers.get_safe_player_secret(player_id)
+    local player_memory = ezmemory.get_player_memory(safe_secret)
+
+    -- dont set health to anything above the players max health
+    local new_health = math.min(new_health, player_memory.max_health)
+    player_memory.health = new_health
+    ezmemory.save_player_memory(safe_secret)
+
+    update_player_health()
 end
 
 function ezmemory.handle_player_avatar_change(player_id, details)
-    if isChangeHP then
-        ezmemory.set_player_avatar_health(player_id, details)
-    end
+    update_player_health(player_id)
 end
 
 return ezmemory
