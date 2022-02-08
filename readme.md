@@ -314,13 +314,24 @@ encounter options:
     - relative chance of this particular encounter being picked from table for this area, if one encounter has weight 10 and another has weight 20, the weight 20 one is twice as likely to be picked.
 - enemies (table)
     - ordered list of all the enemies you want to include in the battle
+    - ranks key
+        - 1 `v1`
+        - 2 `v2`
+        - 3 `v3`
+        - 4 `sp`
+        - 5 `ex`
+        - 6 `rare1`
+        - 7 `rare2`
+        - 8 `nightmare`
     - here are all the mobs and available ranks included by default in ezencounters.zip
-        - `Mettaur` (1)
+        - `Mettaur` (1,2,3,4,6,7)
         - `Champy` (1,2)
-        - `Chimpy` (1) ~Author jamesking#9809
-        - `Chumpy` (1) ~Author jamesking#9809
-        - `RareChampy` (1) ~Author jamesking#9809
-        - `Gunner` (1)
+        - `Chimpy` (1) ~thanks jamesking#9809
+        - `Chumpy` (1) ~thanks jamesking#9809
+        - `RareChampy` (1) ~thanks jamesking#9809
+        - `Gunner` (1,4,6,7)
+        - `Shooter` (1,4)
+        - `Sniper` (1)
         - `BigBrute` (1)
         - `Cactikil` (1,5) ~Author Konstinople#7692
         - `Cactroll` (1,5) ~Author Konstinople#7692
