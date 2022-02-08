@@ -3,6 +3,8 @@ local helpers = require('scripts/ezlibs-scripts/helpers')
 local table = require('table')
 local ezmemory = {}
 
+local isChangeHP = true
+
 local player_memory = {}
 local area_memory = {}
 local player_list = {}
@@ -208,6 +210,9 @@ function ezmemory.give_player_item(player_id, name, amount)
     end
     print('[ezmemory] gave '..player_id..' '..amount..' '..name..' now they have '..player_memory.items[item_id])
     ezmemory.save_player_memory(safe_secret)
+    if name == "HPMem" then
+        ezmemory.set_player_max_health(player_id)
+    end
     return player_memory.items[item_id]
 end
 
@@ -289,6 +294,8 @@ function ezmemory.handle_player_join(player_id)
             end
         end
     end
+    --set the HP now that we have the HPMems
+    ezmemory.set_player_max_health(player_id)
     --Send player money
     Net.set_player_money(player_id, player_memory.money)
     --update join count
@@ -316,6 +323,34 @@ function ezmemory.handle_player_transfer(player_id)
         Net.exclude_object_for_player(player_id, object_id)
     end
     print('[ezmemory] hid '..#player_area_memory.hidden_objects..' objects from '..player_name)
+end
+
+function ezmemory.set_player_max_health(player_id)
+    if isChangeHP then
+        local amount = ezmemory.count_player_item(player_id, "HPMem")
+        local new_max_hp = (100 + 20 * amount)
+        local player_current_health = Net.get_player_health(player_id)
+        local new_hp = math.min(player_current_health + 20, new_max_hp)
+        Net.set_player_health(player_id, new_hp)
+        Net.set_player_max_health(player_id, new_max_hp)
+    end
+end
+
+ezmemory.set_player_avatar_health = function(player_id, details)
+    if isChangeHP then
+        local amount = ezmemory.count_player_item(player_id, "HPMem")
+        local new_max_hp = (100 + 20 * amount)
+        local player_current_health = Net.get_player_health(player_id)
+        local new_hp = math.min(player_current_health, new_max_hp)
+        Net.set_player_health(player_id, new_hp)
+        Net.set_player_max_health(player_id, new_max_hp)
+    end
+end
+
+function ezmemory.handle_player_avatar_change(player_id, details)
+    if isChangeHP then
+        ezmemory.set_player_avatar_health(player_id, details)
+    end
 end
 
 return ezmemory
