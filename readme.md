@@ -375,6 +375,8 @@ encounter options:
         - Rock
         - Coffin
         - BlastCube
+        - IceCube
+        - MysteryData
 
 - obstacle_positions(table)
     - like enemy_positions, but for obstacles
