@@ -308,6 +308,8 @@ create a lua file for each map with the same name as the tiled map (`default.lua
 and put the file into the `server/encounters/` (create this folder if it does not exist)
 
 encounter options:
+- name (string)
+    - if provided, this name can be used to trigger encounters by name, the encounter still needs to be added to a encounter table
 - path (string)
     - path to the main encounter file, usually this will be the same as in the examples, but if you want to create your own .zip you can specify it here, note you will need to copy/modify the code from the provided ezencounters.zip
 - weight (number)
@@ -385,8 +387,8 @@ encounter options:
     - like enemy_positions, but for players.
 
 - freedom_mission(table)
-    - turn_count (number)
-    - player_can_flip (boolean)
+    - turns (number)
+    - can_flip (boolean)
 
 - music (table)
     - path (string), included options:
@@ -443,6 +445,7 @@ return {
 here is another example with every optional field included
 ```lua
 local encounter1 = {
+    name="example encounter"
     path="/server/assets/ezlibs-assets/ezencounters/ezencounters.zip",
     weight=10,
     enemies = {
@@ -505,6 +508,14 @@ local sfx = {
 
 local give_result_awards = function (player_id,encounter_info,stats)
     -- stats = { health: number, score: number, time: number, ran: bool, emotion: number, turns: number, npcs: { id: String, health: number }[] }
+    -- set the player emotion if they left the battle with full sync (1)
+    if stats.emotion == 1 then
+        Net.set_player_emotion(player_id, stats.emotion)
+    else
+        Net.set_player_emotion(player_id, 0)
+    end
+    -- set the player health to whatever they finished the battle with
+    Net.set_player_health(player_id,stats.health)
     if stats.ran then
         return -- no rewards for wimps
     end
@@ -514,6 +525,14 @@ local give_result_awards = function (player_id,encounter_info,stats)
     Net.play_sound_for_player(player_id,sfx.item_get)
 end
 ```
+
+## Radius Encounters
+You can create an object with type `Radius Encounter` which will trigger an encounter the first time a player reaches it.
+Custom Properties:
+- `Name` (string) name of the encounter (from encounter table) to activate
+- `Path` (string) if name is not specified, you can trigger an encounter with a mob package zip by specifying it's path
+- `Once` (boolean) if true, this encounter will never appear again for this player after they beat it
+
 
 # ezweather
 lets you control the weather per map

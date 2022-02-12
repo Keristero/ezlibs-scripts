@@ -262,7 +262,7 @@ function update_all_tiles()
     local current_time = os.time()
     local something_changed = false
     local area_weather = ezweather.get_area_weather(farm_area)
-    if area_weather.type == "rain" then
+    if area_weather.type ~= "clear" then
         if area_memory.rain_started then
             if current_time-area_memory.rain_started > Period.RainDuration then
                 ezweather.clear_weather_in_area(farm_area)
@@ -604,8 +604,13 @@ function ezfarms.handle_tile_interaction(player_id, x, y, z, button)
     if player_tool == "GigFreez" then
         if ezmemory.count_player_item(player_id,"GigFreez") then
             Net.play_sound(farm_area,sfx.wind)
-            ezweather.start_rain_in_area(farm_area)
-            area_memory.rain_started = current_time
+            local area_weather = ezweather.get_area_weather(farm_area)
+            if area_weather.type == "clear" then
+                ezweather.start_rain_in_area(farm_area)
+                area_memory.rain_started = current_time
+            elseif area_weather.type == "rain" then
+                ezweather.start_snow_in_area(farm_area)
+            end
             ezmemory.remove_player_item(player_id,"GigFreez",1)
             local mugshot = Net.get_player_mugshot(player_id)
             Net.message_player(player_id,"\x02\x01...\x01\x02",mugshot.texture_path,mugshot.animation_path)

@@ -8,6 +8,7 @@ local isChangeHP = true
 local player_memory = {}
 local area_memory = {}
 local player_list = {}
+local player_avatar_details = {}
 local items = {}
 local item_name_table = {}
 local objects_hidden_till_disconnect_for_player = {}
@@ -72,10 +73,17 @@ local function update_player_health(player_id)
     local forced_base_hp = tonumber(Net.get_area_custom_property(area_id, "Forced Base HP"))
     local honor_hp_memory_rules = Net.get_area_custom_property(area_id, "Honor HPMem") == "true"
     local honor_saved_hp = Net.get_area_custom_property(area_id, "Honor Saved HP") == "true"
+    local full_heal = Net.get_area_custom_property(area_id, "Full Heal") == "true"
 
     --first, load the players current health, this will be based on the player avatar unless it has already been modified
     local max_hp = Net.get_player_max_health(player_id)
     local hp = Net.get_player_health(player_id)
+    print('current hp',hp)
+
+    if not forced_base_hp and player_avatar_details[player_id].max_health then
+        -- use default avatar max hp
+        max_hp = player_avatar_details[player_id].max_health
+    end
 
     --if we honor saved hp, load the saved hp from memory
     if honor_saved_hp then
@@ -85,15 +93,20 @@ local function update_player_health(player_id)
 
     --if we force base hp, set the max hp down to base
     if forced_base_hp and forced_base_hp > 0 then
-        max_hp = math.min(max_hp,forced_base_hp)
+        max_hp = forced_base_hp
     end
 
     --if we honor mystery data hp increases, calculate the modified max hp
     if honor_hp_memory_rules then
-        max_hp = ezmemory.calculate_player_modified_max_hp(player_id,max_hp,20,"MaxHP")
+        max_hp = ezmemory.calculate_player_modified_max_hp(player_id,max_hp,20,"HPMem")
     end
 
-    Net.set_player_max_health(player_id,max_hp)
+    if full_heal then
+        hp = max_hp
+    end
+
+    print('trying to set hp and max hp',hp,max_hp)
+    Net.set_player_max_health(player_id,max_hp,false)
     hp = math.min(hp,max_hp)
     Net.set_player_health(player_id,hp)
 end
@@ -243,7 +256,7 @@ function ezmemory.give_player_item(player_id, name, amount)
     print('[ezmemory] gave '..player_id..' '..amount..' '..name..' now they have '..player_memory.items[item_id])
     ezmemory.save_player_memory(safe_secret)
     if name == "HPMem" then
-        ezmemory.set_player_max_health(player_id)
+        ezmemory.set_player_max_health(player_id,Net.get_player_max_health(player_id)+20,true)
     end
     return player_memory.items[item_id]
 end
@@ -312,8 +325,15 @@ function ezmemory.count_player_item(player_id, item_name)
 end
 
 function ezmemory.hide_object_from_player_till_disconnect(player_id,area_id,object_id)
+    object_id = tostring(object_id)
     local player_area = Net.get_player_area(player_id)
-    objects_hidden_till_disconnect_for_player[player_id][area_id][tostring(object_id)] = true
+    if not objects_hidden_till_disconnect_for_player[player_id] then
+        objects_hidden_till_disconnect_for_player[player_id] = {}
+    end
+    if not objects_hidden_till_disconnect_for_player[player_id][area_id] then
+        objects_hidden_till_disconnect_for_player[player_id][area_id] = {}
+    end
+    objects_hidden_till_disconnect_for_player[player_id][area_id][object_id] = true
     if player_area == area_id then
         --if the player is in the area of the object being hidden
         Net.exclude_object_for_player(player_id, object_id)
@@ -321,12 +341,16 @@ function ezmemory.hide_object_from_player_till_disconnect(player_id,area_id,obje
 end
 
 function ezmemory.hide_object_from_player(player_id,area_id,object_id)
+    object_id = tostring(object_id)
     local player_area = Net.get_player_area(player_id)
     local safe_secret = helpers.get_safe_player_secret(player_id)
     local player_area_memory = ezmemory.get_player_area_memory(safe_secret,area_id)
-    if not player_area_memory.hidden_objects[tostring(object_id)] then
-        player_area_memory.hidden_objects[tostring(object_id)] = true
+    if not player_area_memory.hidden_objects[object_id] then
+        print('hiding object')
+        player_area_memory.hidden_objects[object_id] = true
         ezmemory.save_player_memory(safe_secret)
+    else
+        print('object was already hidden')
     end
     if player_area == area_id then
         --if the player is in the area of the object being hidden
@@ -335,6 +359,7 @@ function ezmemory.hide_object_from_player(player_id,area_id,object_id)
 end
 
 function ezmemory.object_is_hidden_from_player(player_id,area_id,object_id)
+    object_id = tostring(object_id)
     local safe_secret = helpers.get_safe_player_secret(player_id)
     local player_area_memory = ezmemory.get_player_area_memory(safe_secret,area_id)
     local area_memory = ezmemory.get_area_memory(area_id)
@@ -351,7 +376,12 @@ function ezmemory.object_is_hidden_from_player(player_id,area_id,object_id)
 end
 
 function ezmemory.object_is_hidden_from_player_till_disconnect(player_id,area_id,object_id)
-    return objects_hidden_till_disconnect_for_player[player_id][area_id][tostring(object_id)] == true
+    object_id = tostring(object_id)
+    local dict = objects_hidden_till_disconnect_for_player
+    if dict[player_id] and dict[player_id][area_id] and dict[player_id][area_id][object_id] == true then
+        return true
+    end
+    return false
 end
 
 function ezmemory.handle_player_disconnect(player_id)
@@ -374,8 +404,6 @@ function ezmemory.handle_player_join(player_id)
             end
         end
     end
-    --update health
-    update_player_health(player_id)
     --Send player money
     Net.set_player_money(player_id, player_memory.money)
     --update join count
@@ -404,6 +432,8 @@ function ezmemory.handle_player_transfer(player_id)
     else
         objects_hidden_till_disconnect_for_player[player_id] = {}
     end
+    --update health
+    update_player_health(player_id)
     --load memory of area
     local area_memory = ezmemory.get_area_memory(area_id)
     for object_id, is_hidden in pairs(area_memory.hidden_objects) do
@@ -439,8 +469,8 @@ function ezmemory.set_player_max_health(player_id, new_max_health, should_heal_b
     local safe_secret = helpers.get_safe_player_secret(player_id)
     local player_memory = ezmemory.get_player_memory(safe_secret)
 
-    local current_health = player_memory.health
-    local max_health = player_memory.max_health
+    local current_health = Net.get_player_health(player_id)
+    local max_health = Net.get_player_max_health(player_id)
 
     local new_health = current_health
     --If max health is raised and flag is true, add the increase in max health to current health too
@@ -450,11 +480,13 @@ function ezmemory.set_player_max_health(player_id, new_max_health, should_heal_b
     end
 
     local new_health = math.min(new_health, new_max_health)
+    Net.set_player_max_health(player_id,new_max_health)
+    Net.set_player_health(player_id,new_health)
     player_memory.health = new_health
     player_memory.max_health = max_health
     ezmemory.save_player_memory(safe_secret)
 
-    update_player_health()
+    update_player_health(player_id)
 end
 
 ezmemory.set_player_health = function(player_id, new_health)
@@ -463,13 +495,16 @@ ezmemory.set_player_health = function(player_id, new_health)
 
     -- dont set health to anything above the players max health
     local new_health = math.min(new_health, player_memory.max_health)
+    Net.set_player_health(player_id,new_health)
     player_memory.health = new_health
     ezmemory.save_player_memory(safe_secret)
 
-    update_player_health()
+    update_player_health(player_id)
 end
 
 function ezmemory.handle_player_avatar_change(player_id, details)
+    print('handle avatar change',details)
+    player_avatar_details[player_id] = details
     update_player_health(player_id)
 end
 
