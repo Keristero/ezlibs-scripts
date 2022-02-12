@@ -10,6 +10,7 @@ local area_memory = {}
 local player_list = {}
 local items = {}
 local item_name_table = {}
+local objects_hidden_till_disconnect_for_player = {}
 
 local players_path = './memory/players.json'
 local items_path = './memory/items.json'
@@ -310,6 +311,54 @@ function ezmemory.count_player_item(player_id, item_name)
     return 0
 end
 
+function ezmemory.hide_object_from_player_till_disconnect(player_id,area_id,object_id)
+    local player_area = Net.get_player_area(player_id)
+    objects_hidden_till_disconnect_for_player[player_id][area_id][tostring(object_id)] = true
+    if player_area == area_id then
+        --if the player is in the area of the object being hidden
+        Net.exclude_object_for_player(player_id, object_id)
+    end
+end
+
+function ezmemory.hide_object_from_player(player_id,area_id,object_id)
+    local player_area = Net.get_player_area(player_id)
+    local safe_secret = helpers.get_safe_player_secret(player_id)
+    local player_area_memory = ezmemory.get_player_area_memory(safe_secret,area_id)
+    if not player_area_memory.hidden_objects[tostring(object_id)] then
+        player_area_memory.hidden_objects[tostring(object_id)] = true
+        ezmemory.save_player_memory(safe_secret)
+    end
+    if player_area == area_id then
+        --if the player is in the area of the object being hidden
+        Net.exclude_object_for_player(player_id, object_id)
+    end
+end
+
+function ezmemory.object_is_hidden_from_player(player_id,area_id,object_id)
+    local safe_secret = helpers.get_safe_player_secret(player_id)
+    local player_area_memory = ezmemory.get_player_area_memory(safe_secret,area_id)
+    local area_memory = ezmemory.get_area_memory(area_id)
+    if ezmemory.object_is_hidden_from_player_till_disconnect(player_id,area_id,object_id) then
+        return true
+    end
+    if area_memory.hidden_objects[object_id] then
+        return true
+    end
+    if player_area_memory.hidden_objects[object_id] then
+        return true
+    end
+    return false
+end
+
+function ezmemory.object_is_hidden_from_player_till_disconnect(player_id,area_id,object_id)
+    return objects_hidden_till_disconnect_for_player[player_id][area_id][tostring(object_id)] == true
+end
+
+function ezmemory.handle_player_disconnect(player_id)
+    --clear objects hidden till rejoin for player
+    objects_hidden_till_disconnect_for_player = {}
+end
+
 function ezmemory.handle_player_join(player_id)
     --record player to list of players that have joined
     local safe_secret = helpers.get_safe_player_secret(player_id)
@@ -325,6 +374,7 @@ function ezmemory.handle_player_join(player_id)
             end
         end
     end
+    --update health
     update_player_health(player_id)
     --Send player money
     Net.set_player_money(player_id, player_memory.money)
@@ -342,6 +392,18 @@ function ezmemory.handle_player_transfer(player_id)
     local player_name = Net.get_player_name(player_id)
     local area_id = Net.get_player_area(player_id)
     --assumes that player memory has already been read from disk
+    --exlcude objects hidden till disconnect
+    if objects_hidden_till_disconnect_for_player[player_id] then
+        if objects_hidden_till_disconnect_for_player[player_id][area_id] then
+            for object_id, is_hidden in pairs(objects_hidden_till_disconnect_for_player[player_id][area_id]) do
+                Net.exclude_object_for_player(player_id, object_id)
+            end
+        else
+            objects_hidden_till_disconnect_for_player[player_id][area_id] = {}
+        end
+    else
+        objects_hidden_till_disconnect_for_player[player_id] = {}
+    end
     --load memory of area
     local area_memory = ezmemory.get_area_memory(area_id)
     for object_id, is_hidden in pairs(area_memory.hidden_objects) do

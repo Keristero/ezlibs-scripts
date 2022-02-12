@@ -4,7 +4,6 @@ local helpers = require('scripts/ezlibs-scripts/helpers')
 local math = require('math')
 
 local data_dialogues = {}
-local data_hidden_till_rejoin_for_player = {}
 local object_cache = {}
 local cache_types = {"Mystery Option"}
 
@@ -24,23 +23,8 @@ local sfx = {
 
 function ezmystery.handle_player_join(player_id)
     --Load sound effects for mystery data interaction
-    data_hidden_till_rejoin_for_player[player_id] = {}
     for name,path in pairs(sfx) do
         Net.provide_asset_for_player(player_id, path)
-    end
-    --Pretend to do a transfer too, to hide data in entry map
-    ezmystery.handle_player_transfer(player_id)
-end
-
-function ezmystery.handle_player_transfer(player_id)
-    --Load sound effects for mystery data interaction
-    local area_id = Net.get_player_area(player_id)
-    if data_hidden_till_rejoin_for_player[player_id][area_id] then
-        for object_id, is_hidden in pairs(data_hidden_till_rejoin_for_player[player_id][area_id]) do
-            Net.exclude_object_for_player(player_id, object_id)
-        end
-    else
-        data_hidden_till_rejoin_for_player[player_id][area_id] = {}
     end
 end
 
@@ -78,11 +62,8 @@ function ezmystery.handle_textbox_response(player_id, response)
 end
 
 function try_collect_datum(player_id,object)
-    local safe_secret = helpers.get_safe_player_secret(player_id)
-    local player_memory = ezmemory.get_player_memory(safe_secret)
     local area_id = Net.get_player_area(player_id)
-    local player_area_memory = ezmemory.get_player_area_memory(safe_secret,area_id)
-    if player_area_memory.hidden_objects[tostring(object.id)] or data_hidden_till_rejoin_for_player[player_id][area_id][tostring(object.id)] then
+    if ezmemory.object_is_hidden_from_player(player_id,area_id,object.id) then
         --Anti spam protection
         return
     end
@@ -99,11 +80,8 @@ function try_collect_datum(player_id,object)
 end
 
 function collect_datum(player_id,object,datum_id_override)
-    local safe_secret = helpers.get_safe_player_secret(player_id)
-    local player_memory = ezmemory.get_player_memory(safe_secret)
     local area_id = Net.get_player_area(player_id)
-    local player_area_memory = ezmemory.get_player_area_memory(safe_secret,area_id)
-    if player_area_memory.hidden_objects[tostring(datum_id_override)] or data_hidden_till_rejoin_for_player[player_id][area_id][tostring(datum_id_override)] then
+    if ezmemory.object_is_hidden_from_player(player_id,area_id,datum_id_override) then
         --Anti spam protection
         return
     end
@@ -157,13 +135,11 @@ function collect_datum(player_id,object,datum_id_override)
 
     if object.custom_properties["Once"] == "true" then
         --If this mystery data should only be available once (not respawning)
-        player_area_memory.hidden_objects[tostring(datum_id_override)] = true
-        ezmemory.save_player_memory(safe_secret)
+        ezmemory.hide_object_from_player(player_id,area_id,datum_id_override)
     end
 
     --Now remove the mystery data
-    data_hidden_till_rejoin_for_player[player_id][area_id][tostring(datum_id_override)] = true
-    Net.exclude_object_for_player(player_id, datum_id_override)
+    ezmemory.hide_object_from_player_till_disconnect(player_id,area_id,datum_id_override)
 end
 
 function ezmystery.handle_object_interaction(player_id, object_id)
