@@ -576,6 +576,9 @@ end
 function eznpcs.load_npcs()
     return ( LoadNpcs() )
 end
+function eznpcs.add_npcs_to_area(area_id)
+    return ( AddNpcsToArea(area_id) )
+end
 function eznpcs.add_event(event_object)
     return ( AddEvent(event_object) )
 end
