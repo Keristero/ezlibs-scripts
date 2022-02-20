@@ -55,11 +55,11 @@ function helpers.safe_require(script_path)
     if status == true then
         return require(script_path)
     else
-        if string.find(err,'not found') then
-            print("[eznpcs] no script found at "..script_path)
+        if string.find(err,"module '"..script_path.."' not found") then
+            print("(safe_require) no script found at "..script_path)
         else
-            print("[eznpcs] error loading script "..script_path)
-            print("[eznpcs] reason "..err)
+            print("(safe_require) error loading script "..script_path)
+            print("(safe_require) reason "..err)
         end
     end
 end
