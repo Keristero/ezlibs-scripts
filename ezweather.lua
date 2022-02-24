@@ -72,17 +72,13 @@ function ezweather.start_fog_in_area(area_id)
         camera_tint={r=0, g=0, b=0, a=0}
     }
 
-    local area_custom_properties = Net.get_area_custom_properties(area_id)
-    --local area_custom_properties = Net.get_area_custom_properties(area_id)
-    --if area_custom_properties["Fog Song"] then
-        --Net.set_song(area_id, area_custom_properties["Fog Song"])
-    --end
-
     Net.set_area_custom_property(area_id, "Foreground Animation", "/server/assets/ezlibs-assets/ezweather/fog.animation")
     Net.set_area_custom_property(area_id, "Foreground Texture", "/server/assets/ezlibs-assets/ezweather/fog.png")
-    Net.set_area_custom_property(area_id, "Foreground Parallax", 0.1)
-    Net.set_area_custom_property(area_id, "Foreground Vel X", 0.0)
-    Net.set_area_custom_property(area_id, "Foreground Vel Y", 0.0)
+    Net.set_area_custom_property(area_id, "Foreground Parallax", 0.0)
+    Net.set_area_custom_property(area_id, "Foreground Vel X", 0.05)
+    Net.set_area_custom_property(area_id, "Foreground Vel Y", 0.05)
+
+    fade_camera_for_players_in_area(area_id)
 end
 
 function fade_camera_for_players_in_area(area_id)
