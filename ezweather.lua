@@ -64,6 +64,23 @@ function ezweather.start_snow_in_area(area_id)
     fade_camera_for_players_in_area(area_id)
 end
 
+function ezweather.start_fog_in_area(area_id)
+    print('[ezweather] starting fog in '..area_id)
+
+    volatile_memory[area_id] = {
+        type="fog",
+        camera_tint={r=0, g=0, b=0, a=0}
+    }
+
+    Net.set_area_custom_property(area_id, "Foreground Animation", "/server/assets/ezlibs-assets/ezweather/fog.animation")
+    Net.set_area_custom_property(area_id, "Foreground Texture", "/server/assets/ezlibs-assets/ezweather/fog.png")
+    Net.set_area_custom_property(area_id, "Foreground Parallax", 0.0)
+    Net.set_area_custom_property(area_id, "Foreground Vel X", 0.05)
+    Net.set_area_custom_property(area_id, "Foreground Vel Y", 0.05)
+
+    fade_camera_for_players_in_area(area_id)
+end
+
 function fade_camera_for_players_in_area(area_id)
     local players_in_area = Net.list_players(area_id)
     for i, player_id in ipairs(players_in_area) do
@@ -77,6 +94,7 @@ function ezweather.get_area_weather(area_id)
     end
     return volatile_memory[area_id]
 end
+
 
 function ezweather.clear_weather_in_area(area_id)
     print('[ezweather] restoring fine weather properties for '..area_id)
