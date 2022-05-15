@@ -1,13 +1,7 @@
-function is_now_before_date(date_string)
-    local timestamp_a = os.time()
-    local timestamp_b = date_string_to_timestamp(date_string)
-    if timestamp_a < timestamp_b then
-        return true
-    end
-    return false
-end
+local helpers = require('scripts/ezlibs-scripts/helpers')
+eznpcs_helpers = {}
 
-function date_string_to_timestamp(date_string)
+function eznpcs_helpers.date_string_to_timestamp(date_string)
     --expect basic cron like date format, only supporting * or specific values
     --0 0 10 15 * * this would be on the 15th of every month at 10AM
     --seconds, minute, hour, day, month, year
@@ -27,7 +21,16 @@ function date_string_to_timestamp(date_string)
     return os.time{year=current_date.year, month=current_date.month, day=current_date.day, hour=current_date.hour, min=current_date.min, sec=current_date.sec}
 end
 
-function position_overlaps_something(position,area_id)
+function eznpcs_helpers.is_now_before_date(date_string)
+    local timestamp_a = os.time()
+    local timestamp_b = eznpcs_helpers.date_string_to_timestamp(date_string)
+    if timestamp_a < timestamp_b then
+        return true
+    end
+    return false
+end
+
+function eznpcs_helpers.position_overlaps_something(position,area_id)
     --Returns true if a position (with a size) overlaps something important
     local player_ids = Net.list_players(area_id)
 
@@ -46,7 +49,7 @@ function position_overlaps_something(position,area_id)
     return false
 end
 
-function extract_numbered_properties(object,property_prefix)
+function eznpcs_helpers.extract_numbered_properties(object,property_prefix)
     local out_table = {}
     for i=1,10 do
         local text = object.custom_properties[property_prefix..i]
@@ -56,3 +59,5 @@ function extract_numbered_properties(object,property_prefix)
     end
     return out_table
 end
+
+return eznpcs_helpers

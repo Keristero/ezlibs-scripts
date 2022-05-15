@@ -1,7 +1,7 @@
 local Direction = require("scripts/ezlibs-scripts/direction")
 local helpers = require('scripts/ezlibs-scripts/helpers')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
-local eznpcs_helpers = require('scripts/ezlibs-scripts/eznpcs/eznpcs_helpers.lua')
+local eznpcs_helpers = require('scripts/ezlibs-scripts/eznpcs/eznpcs_helpers')
 local math = require('math')
 
 local eznpcs = {}
