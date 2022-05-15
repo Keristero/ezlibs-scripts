@@ -344,6 +344,10 @@ end
 function ezwarps.handle_custom_warp(player_id, object_id)
     if not ezwarps.player_is_in_animation(player_id) then
         local player_area = Net.get_player_area(player_id)
+        if not custom_warps[player_area] or not custom_warps[player_area][object_id] then
+            --this is not a custom warp that has been initialized by ezwarps
+            return
+        end
         local object = Net.get_object_by_id(player_area, object_id)
         local custom_warp_meta = custom_warps[player_area][object_id]
         use_warp(player_id,object,custom_warp_meta)
