@@ -24,6 +24,17 @@ function get_table_length(tbl)
     return getN
 end
 
+function extract_numbered_properties(object,property_prefix)
+    local out_table = {}
+    for i=1,10 do
+        local text = object.custom_properties[property_prefix..i]
+        if text then
+            out_table[i] = text
+        end
+    end
+    return out_table
+end
+
 --helpers lib
 function helpers.clear_table(tbl)
     local count = #tbl

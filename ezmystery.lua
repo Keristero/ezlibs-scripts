@@ -28,17 +28,6 @@ function ezmystery.handle_player_join(player_id)
     end
 end
 
-function ExtractNumberedProperties(object,property_prefix)
-    local out_table = {}
-    for i=1,10 do
-        local text = object.custom_properties[property_prefix..i]
-        if text then
-            out_table[i] = text
-        end
-    end
-    return out_table
-end
-
 function ezmystery.handle_textbox_response(player_id, response)
     if data_dialogues[player_id] then
         print('[ezmystery] '..player_id..' responded '..response..' in data dialogue')
@@ -92,7 +81,7 @@ function collect_datum(player_id,object,datum_id_override)
         end
     end
     if object.custom_properties["Type"] == "random" then
-        local random_options = ExtractNumberedProperties(object,"Next ")
+        local random_options = extract_numbered_properties(object,"Next ")
         local random_selection_id = random_options[math.random(#random_options)]
         if random_selection_id then
             randomly_selected_datum = helpers.get_object_by_id_cached(area_id,random_selection_id,object_cache,cache_types)
