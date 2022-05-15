@@ -46,7 +46,7 @@ local cache_types = {"NPC","Waypoint","Dialogue"}
 
 --TODO load all waypoints / dialogues on server start and delete them from the map to save bandwidth
 
-function DoDialogue(npc,player_id,dialogue,relay_object)
+function do_dialogue(npc,player_id,dialogue,relay_object)
     if current_player_dialogue[player_id] == dialogue.id then
         return --player is already in this dialogue, anti spam protection
     end
@@ -72,7 +72,7 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
                 if next_dialogue_info.id then
                     if not next_dialogue_info.wait_for_response then
                         local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_info.id,object_cache,cache_types)
-                        DoDialogue(npc,player_id,dialogue,relay_object)
+                        do_dialogue(npc,player_id,dialogue,relay_object)
                         return
                     end
                     next_dialogue_id = next_dialogue_info.id
@@ -94,12 +94,12 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
     end
     local player_pos = Net.get_player_position(player_id)
 
-    local dialogue_texts = ExtractNumberedProperties(dialogue,"Text ")
-    local next_dialogues = ExtractNumberedProperties(dialogue,"Next ")
+    local dialogue_texts = extract_numbered_properties(dialogue,"Text ")
+    local next_dialogues = extract_numbered_properties(dialogue,"Next ")
     
     if dialogue_type == "first" or  dialogue_type == "question" then
         message = dialogue_texts[1]
-        local next_id = FirstValueFromTable(next_dialogues)
+        local next_id = first_value_from_table(next_dialogues)
         next_dialogue_id = next_id
     end
 
@@ -170,7 +170,7 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
         --Do the next dialogue now
         local area_id = Net.get_player_area(player_id)
         local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_id,object_cache,cache_types)
-        DoDialogue(npc,player_id,dialogue,relay_object)
+        do_dialogue(npc,player_id,dialogue,relay_object)
         return
     else
         
@@ -186,7 +186,7 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
         textbox_responses[player_id] = {
             npc=npc,
             action=function(response)
-                EndConversation(player_id)
+                end_conversation(player_id)
                 if dialogue_type == "question" then
                     local next_index = 2
                     if response == 1 then
@@ -197,7 +197,7 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
                 if next_dialogue_id then
                     local area_id = Net.get_player_area(player_id)
                     local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_id,object_cache,cache_types)
-                    DoDialogue(npc,player_id,dialogue,relay_object)
+                    do_dialogue(npc,player_id,dialogue,relay_object)
                 else
                     Net.set_bot_direction(npc.bot_id, npc.direction)
                 end
@@ -206,7 +206,7 @@ function DoDialogue(npc,player_id,dialogue,relay_object)
     end
 end
 
-function ExtractNumberedProperties(object,property_prefix)
+function extract_numbered_properties(object,property_prefix)
     local out_table = {}
     for i=1,10 do
         local text = object.custom_properties[property_prefix..i]
@@ -217,14 +217,7 @@ function ExtractNumberedProperties(object,property_prefix)
     return out_table
 end
 
-function FirstValueFromTable(tbl)
-    for i, value in pairs(tbl) do
-        return value
-    end
-    return nil
-end
-
-function CreateBotFromObject(area_id,object_id)
+function create_bot_from_object(area_id,object_id)
     local placeholder_object = helpers.get_object_by_id_cached(area_id, object_id,object_cache,cache_types)
     local x = placeholder_object.x
     local y = placeholder_object.y
@@ -243,25 +236,25 @@ function CreateBotFromObject(area_id,object_id)
     local npc_turns_to_talk = placeholder_object.custom_properties["Dont Face Player"] == "true"
     local direction = placeholder_object.custom_properties.Direction
 
-    local npc = CreateNPC(area_id,npc_asset_name,x,y,z,direction,placeholder_object.name,npc_animation_name,npc_mug_animation_name,npc_turns_to_talk)
+    local npc = create_npc(area_id,npc_asset_name,x,y,z,direction,placeholder_object.name,npc_animation_name,npc_mug_animation_name,npc_turns_to_talk)
     placeholder_to_botid[tostring(object_id)] = npc.bot_id
     --print('[eznpcs] added placeholder mapping '..object_id..' to '..npc.bot_id)
 
     if placeholder_object.custom_properties["Dialogue Type"] then
         --If the placeholder has Chat text, add behaviour to have it respond to interactions
         npc.first_dialogue = placeholder_object
-        local chat_behaviour = ChatBehaviour()
-        AddBehaviour(npc,chat_behaviour)
+        local chat_behaviour = chat_behaviour()
+        add_behaviour(npc,chat_behaviour)
     end
 
     if placeholder_object.custom_properties["Next Waypoint 1"] then
         --If the placeholder has npc_first_waypoint
-        local waypoint_follow_behaviour = WaypointFollowBehaviour(placeholder_object.custom_properties["Next Waypoint 1"])
-        AddBehaviour(npc,waypoint_follow_behaviour)
+        local waypoint_follow_behaviour = waypoint_follow_behaviour(placeholder_object.custom_properties["Next Waypoint 1"])
+        add_behaviour(npc,waypoint_follow_behaviour)
     end
 end
 
-function CreateNPC(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mug_animation_name,npc_turns_to_talk)
+function create_npc(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mug_animation_name,npc_turns_to_talk)
     local texture_path = npc_asset_folder.."sheet/"..asset_name..".png"
     local animation_path = npc_asset_folder.."sheet/"..asset_name..".animation"
     local mug_animation_path = generic_npc_mug_animation_path
@@ -305,7 +298,7 @@ function CreateNPC(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mu
     return npc_data
 end
 
-function AddBehaviour(npc,behaviour)
+function add_behaviour(npc,behaviour)
     --Behaviours have a type and an action
     --type is the event that triggers them, on_interact or on_tick
     --action is the callback for the logic
@@ -320,31 +313,23 @@ function AddBehaviour(npc,behaviour)
 end
 
 --Behaviour factories
-function ChatBehaviour()
+function chat_behaviour()
     behaviour = {
         type='on_interact',
         action=function(npc,player_id,relay_object)
             local dialogue = npc.first_dialogue
-            DoDialogue(npc,player_id,dialogue,relay_object)
+            do_dialogue(npc,player_id,dialogue,relay_object)
         end
     }
     return behaviour
 end
 
-function EndConversation(player_id)
+function end_conversation(player_id)
     textbox_responses[player_id] = nil
     current_player_dialogue[player_id] = nil
 end
 
-function GetTableLength(tbl)
-    local getN = 0
-    for n in pairs(tbl) do 
-      getN = getN + 1 
-    end
-    return getN
-end
-
-function WaypointFollowBehaviour(first_waypoint_id)
+function waypoint_follow_behaviour(first_waypoint_id)
     behaviour = {
         type='on_tick',
         initialize=function(npc)
@@ -356,13 +341,13 @@ function WaypointFollowBehaviour(first_waypoint_id)
             end
         end,
         action=function(npc,delta_time)
-            MoveNPC(npc,delta_time)
+            move_npc(npc,delta_time)
         end
     }
     return behaviour
 end
 
-function OnActorInteraction(player_id,actor_id,relay_object)
+function do_actor_interaction(player_id,actor_id,relay_object)
     local npc_id = actor_id
     if npcs[npc_id] then
         local npc = npcs[npc_id]
@@ -391,7 +376,7 @@ function position_overlaps_something(position,area_id)
     return false
 end
 
-function AnyoneTalkingToNPC(npc_id)
+function is_anyone_talking_to_npc(npc_id)
     for player_id, conversation in next, textbox_responses do
         if conversation.npc.bot_id == npc_id then
             return true
@@ -400,8 +385,8 @@ function AnyoneTalkingToNPC(npc_id)
     return false
 end
 
-function MoveNPC(npc,delta_time)
-    if AnyoneTalkingToNPC(npc.bot_id) then
+function move_npc(npc,delta_time)
+    if is_anyone_talking_to_npc(npc.bot_id) then
         return
     end
     if npc.wait_time and npc.wait_time > 0 then
@@ -414,7 +399,7 @@ function MoveNPC(npc,delta_time)
 
     local distance = math.sqrt((waypoint.x - npc.x) ^ 2 + (waypoint.y - npc.y) ^ 2)
     if distance < npc.size then
-        NPCReachedWaypoint(npc,waypoint)
+        on_npc_reached_waypoint(npc,waypoint)
         return
     end
     
@@ -466,7 +451,7 @@ function is_now_before_date(date_string)
     return false
 end
 
-function NPCReachedWaypoint(npc,waypoint)
+function on_npc_reached_waypoint(npc,waypoint)
     local should_be_cached = helpers.object_is_of_type(waypoint,cache_types)
     if not should_be_cached then
         print("[eznpcs] WARNING Waypoint "..waypoint.id.." at "..waypoint.x..","..waypoint.y.." in "..npc.area_id.." has incorrect type and wont be cached")
@@ -482,10 +467,10 @@ function NPCReachedWaypoint(npc,waypoint)
         waypoint_type = waypoint.custom_properties["Waypoint Type"]
     end
     --select next waypoint based on Waypoint Type
-    local next_waypoints = ExtractNumberedProperties(waypoint,"Next Waypoint ")
+    local next_waypoints = extract_numbered_properties(waypoint,"Next Waypoint ")
     local next_waypoint_id = nil
     if waypoint_type == "first" then
-        next_waypoint_id = FirstValueFromTable(next_waypoints)
+        next_waypoint_id = first_value_from_table(next_waypoints)
     end
     if waypoint_type == "random" then
         local next_waypoint_index = math.random(#next_waypoints)
@@ -515,21 +500,29 @@ function NPCReachedWaypoint(npc,waypoint)
     end
 end
 
-function OnTextboxResponse(player_id, response)
-    if textbox_responses[player_id] then
-        textbox_responses[player_id].action(response)
+function add_npcs_to_area(area_id)
+    --Loop over all objects in area, spawning NPCs for each NPC type object.
+    local objects = Net.list_objects(area_id)
+    for i, object_id in next, objects do
+        local object = helpers.get_object_by_id_cached(area_id, object_id,object_cache,cache_types)
+        if object.type == "NPC" then
+            create_bot_from_object(area_id, object_id)
+        end
     end
 end
 
-function OnPlayerDisconnect(player_id)
-    EndConversation(player_id)
+--Interface
+--all of these must be used by entry script for this to function.
+function eznpcs.load_npcs()
+    --for each area, load NPCS
+    local areas = Net.list_areas()
+    for i, area_id in next, areas do
+        --Add npcs to existing areas on startup
+        add_npcs_to_area(area_id)
+    end
 end
 
-function OnPlayerTransfer(player_id)
-    EndConversation(player_id)
-end
-
-function AddEvent(event_object)
+function eznpcs.add_event(event_object)
     if event_object.name and event_object.action then
         if events[event_object.name] then
             print('[eznpcs] WARNING event '..event_object.name..' already exists and will be replaced')
@@ -540,51 +533,14 @@ function AddEvent(event_object)
         print('[eznpcs] Cant add invalid event, events need a name and action {}')
     end
 end
-
-function OnObjectInteract(player_id, object_id)
-    local area_id = Net.get_player_area(player_id)
-    local relay_object = Net.get_object_by_id(area_id,object_id)
-    if relay_object.custom_properties["Interact Relay"] then
-        local placeholder_id = relay_object.custom_properties["Interact Relay"]
-        local bot_id = placeholder_to_botid[placeholder_id]
-        OnActorInteraction(player_id,bot_id,relay_object)
-    end
-end
-
-function AddNpcsToArea(area_id)
-    --Loop over all objects in area, spawning NPCs for each NPC type object.
-    local objects = Net.list_objects(area_id)
-    for i, object_id in next, objects do
-        local object = helpers.get_object_by_id_cached(area_id, object_id,object_cache,cache_types)
-        if object.type == "NPC" then
-            CreateBotFromObject(area_id, object_id)
-        end
-    end
-end
-
-function LoadNpcs()
-    --for each area, load NPCS
-    local areas = Net.list_areas()
-    for i, area_id in next, areas do
-        --Add npcs to existing areas on startup
-        AddNpcsToArea(area_id)
-    end
-end
-
---Interface
---all of these must be used by entry script for this to function.
-function eznpcs.load_npcs()
-    return ( LoadNpcs() )
-end
-function eznpcs.add_event(event_object)
-    return ( AddEvent(event_object) )
-end
 function eznpcs.create_npc_from_object(area_id,object_id)
-    return ( CreateBotFromObject(area_id,object_id) )
+    return ( create_bot_from_object(area_id,object_id) )
 end
+
 function eznpcs.handle_actor_interaction(player_id,actor_id)
-    return ( OnActorInteraction(player_id,actor_id) )
+    return ( do_actor_interaction(player_id,actor_id) )
 end
+
 function eznpcs.on_tick(delta_time)
     if not custom_events_script_loaded then
         custom_events_script_loaded = true
@@ -597,23 +553,31 @@ function eznpcs.on_tick(delta_time)
     end
 end
 function eznpcs.create_npc(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mug_animation_name)
-    return ( CreateNPC(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mug_animation_name) )
+    return ( create_npc(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mug_animation_name) )
 end
 
 function eznpcs.handle_player_transfer(player_id)
-    return ( OnPlayerTransfer(player_id))
+    end_conversation(player_id)
 end
   
 function eznpcs.handle_player_disconnect(player_id)
-    return ( OnPlayerDisconnect(player_id))
+    end_conversation(player_id)
 end
 
 function eznpcs.handle_textbox_response(player_id, response)
-    return ( OnTextboxResponse(player_id, response))
+    if textbox_responses[player_id] then
+        textbox_responses[player_id].action(response)
+    end
 end
 
 function eznpcs.handle_object_interaction(player_id, object_id)
-    return ( OnObjectInteract(player_id, object_id))
+    local area_id = Net.get_player_area(player_id)
+    local relay_object = Net.get_object_by_id(area_id,object_id)
+    if relay_object.custom_properties["Interact Relay"] then
+        local placeholder_id = relay_object.custom_properties["Interact Relay"]
+        local bot_id = placeholder_to_botid[placeholder_id]
+        do_actor_interaction(player_id,bot_id,relay_object)
+    end
 end
 
 return eznpcs
