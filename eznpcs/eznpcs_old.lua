@@ -1,7 +1,6 @@
 local Direction = require("scripts/ezlibs-scripts/direction")
 local helpers = require('scripts/ezlibs-scripts/helpers')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
-local eznpcs_helpers = require('scripts/ezlibs-scripts/eznpcs/eznpcs_helpers.lua')
 local math = require('math')
 
 local eznpcs = {}
@@ -95,8 +94,8 @@ function do_dialogue(npc,player_id,dialogue,relay_object)
     end
     local player_pos = Net.get_player_position(player_id)
 
-    local dialogue_texts = eznpcs_helpers.extract_numbered_properties(dialogue,"Text ")
-    local next_dialogues = eznpcs_helpers.extract_numbered_properties(dialogue,"Next ")
+    local dialogue_texts = extract_numbered_properties(dialogue,"Text ")
+    local next_dialogues = extract_numbered_properties(dialogue,"Next ")
     
     if dialogue_type == "first" or  dialogue_type == "question" then
         message = dialogue_texts[1]
@@ -146,7 +145,7 @@ function do_dialogue(npc,player_id,dialogue,relay_object)
         if date_b then
             message = dialogue_texts[2]
             next_dialogue_id = next_dialogues[2]
-            if eznpcs_helpers.is_now_before_date(date_b) then
+            if is_now_before_date(date_b) then
                 message = dialogue_texts[1]
                 next_dialogue_id = next_dialogues[1]
             end
@@ -156,7 +155,7 @@ function do_dialogue(npc,player_id,dialogue,relay_object)
         if date_b then
             message = dialogue_texts[2]
             next_dialogue_id = next_dialogues[2]
-            if not eznpcs_helpers.is_now_before_date(date_b) then
+            if not is_now_before_date(date_b) then
                 message = dialogue_texts[1]
                 next_dialogue_id = next_dialogues[1]
             end
@@ -205,6 +204,17 @@ function do_dialogue(npc,player_id,dialogue,relay_object)
             end
         }
     end
+end
+
+function extract_numbered_properties(object,property_prefix)
+    local out_table = {}
+    for i=1,10 do
+        local text = object.custom_properties[property_prefix..i]
+        if text then
+            out_table[i] = text
+        end
+    end
+    return out_table
 end
 
 function create_bot_from_object(area_id,object_id)
@@ -347,6 +357,25 @@ function do_actor_interaction(player_id,actor_id,relay_object)
     end
 end
 
+function position_overlaps_something(position,area_id)
+    --Returns true if a position (with a size) overlaps something important
+    local player_ids = Net.list_players(area_id)
+
+    --Check for overlap against players
+    for i = 1, #player_ids, 1 do
+        local player_pos = Net.get_player_position(player_ids[i])
+        if
+            math.abs(player_pos.x - position.x) < position.size and
+            math.abs(player_pos.y - position.y) < position.size and
+            player_pos.z == position.z
+        then
+            return true
+        end
+    end
+
+    return false
+end
+
 function is_anyone_talking_to_npc(npc_id)
     for player_id, conversation in next, textbox_responses do
         if conversation.npc.bot_id == npc_id then
@@ -383,7 +412,7 @@ function move_npc(npc,delta_time)
     new_pos.x = npc.x + vel_x * delta_time
     new_pos.y = npc.y + vel_y * delta_time
 
-    if eznpcs_helpers.position_overlaps_something(new_pos,area_id) then
+    if position_overlaps_something(new_pos,area_id) then
         return
     end
 
@@ -391,6 +420,35 @@ function move_npc(npc,delta_time)
     npc.x = new_pos.x
     npc.y = new_pos.y
 
+end
+
+function date_string_to_timestamp(date_string)
+    --expect basic cron like date format, only supporting * or specific values
+    --0 0 10 15 * * this would be on the 15th of every month at 10AM
+    --seconds, minute, hour, day, month, year
+    local current_date = os.date("*t")
+    local date_parts = helpers.split(date_string," ")
+    if #date_parts < 6 then
+        return nil
+    end
+    local date_part_keys = {"sec","min","hour","day","month","year"}
+    --everywhere that is not a * in the date string, replace time value with specified time
+    for index, value in ipairs(date_parts) do
+        if value ~= "*" then
+            local date_part_key = date_part_keys[index]
+            current_date[date_part_key] = tonumber(value)
+        end
+    end
+    return os.time{year=current_date.year, month=current_date.month, day=current_date.day, hour=current_date.hour, min=current_date.min, sec=current_date.sec}
+end
+
+function is_now_before_date(date_string)
+    local timestamp_a = os.time()
+    local timestamp_b = date_string_to_timestamp(date_string)
+    if timestamp_a < timestamp_b then
+        return true
+    end
+    return false
 end
 
 function on_npc_reached_waypoint(npc,waypoint)
@@ -409,7 +467,7 @@ function on_npc_reached_waypoint(npc,waypoint)
         waypoint_type = waypoint.custom_properties["Waypoint Type"]
     end
     --select next waypoint based on Waypoint Type
-    local next_waypoints = eznpcs_helpers.extract_numbered_properties(waypoint,"Next Waypoint ")
+    local next_waypoints = extract_numbered_properties(waypoint,"Next Waypoint ")
     local next_waypoint_id = nil
     if waypoint_type == "first" then
         next_waypoint_id = first_value_from_table(next_waypoints)
@@ -423,7 +481,7 @@ function on_npc_reached_waypoint(npc,waypoint)
     if waypoint_type == "before" then
         if date_b then
             next_waypoint_id = next_waypoints[2]
-            if eznpcs_helpers.is_now_before_date(date_b) then
+            if is_now_before_date(date_b) then
                 next_waypoint_id = next_waypoints[1]
             end
         end
@@ -431,7 +489,7 @@ function on_npc_reached_waypoint(npc,waypoint)
     if waypoint_type == "after" then
         if date_b then
             next_waypoint_id = next_waypoints[2]
-            if not eznpcs_helpers.is_now_before_date(date_b) then
+            if not is_now_before_date(date_b) then
                 next_waypoint_id = next_waypoints[1]
             end
         end
