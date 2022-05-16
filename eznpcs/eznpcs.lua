@@ -84,35 +84,37 @@ function do_dialogue(npc,player_id,dialogue,relay_object)
                 return next_id
             end)
         elseif dialogue_type == "itemcheck" then
-            printd('itemcheck')
             --TODO PROMISIFY THIS SECTION
-            local required_item = dialogue.custom_properties["Required Item"]
-            if required_item ~= nil then
-                local required_amount = dialogue.custom_properties["Required Amount"]
-                if required_amount == nil then
-                    required_amount = 1
-                end
-                local take_item = dialogue.custom_properties["Take Item"] == "true"
-                if required_item == "money" then
-                    if ezmemory.get_player_money(player_id) >= tonumber(required_amount) then
-                        next_dialogue_id = next_dialogues[1]
-                        if take_item then
-                            ezmemory.spend_player_money(player_id,required_amount)
+            dialogue_promise = async(function ()
+                local required_item = dialogue.custom_properties["Required Item"]
+                if required_item ~= nil then
+                    local required_amount = dialogue.custom_properties["Required Amount"]
+                    if required_amount == nil then
+                        required_amount = 1
+                    end
+                    local take_item = dialogue.custom_properties["Take Item"] == "true"
+                    if required_item == "money" then
+                        if ezmemory.get_player_money(player_id) >= tonumber(required_amount) then
+                            next_dialogue_id = next_dialogues[1]
+                            if take_item then
+                                ezmemory.spend_player_money(player_id,required_amount)
+                            end
+                        else
+                            next_dialogue_id = next_dialogues[2]
                         end
                     else
-                        next_dialogue_id = next_dialogues[2]
-                    end
-                else
-                    if ezmemory.count_player_item(player_id, required_item) >= tonumber(required_amount) then
-                        next_dialogue_id = next_dialogues[1]
-                        if take_item then
-                            ezmemory.remove_player_item(player_id, required_item, required_amount)
+                        if ezmemory.count_player_item(player_id, required_item) >= tonumber(required_amount) then
+                            next_dialogue_id = next_dialogues[1]
+                            if take_item then
+                                ezmemory.remove_player_item(player_id, required_item, required_amount)
+                            end
+                        else
+                            next_dialogue_id = next_dialogues[2]
                         end
-                    else
-                        next_dialogue_id = next_dialogues[2]
                     end
                 end
-            end
+                return next_dialogue_id
+            end)
         elseif dialogue_type == "before" or dialogue_type == "after" then
             if date_b then
                 local message = dialogue_texts[2]
