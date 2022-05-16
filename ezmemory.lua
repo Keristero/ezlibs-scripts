@@ -63,8 +63,10 @@ end)
 local net_areas = Net.list_areas()
 for i, area_id in ipairs(net_areas) do
     load_file_and_then(area_path_prefix..area_id..'.json',function(value)
-        area_memory[area_id] = json.decode(value)
-        print('[ezmemory] loaded area memory for '..area_id)
+        if value ~= "" then
+            area_memory[area_id] = json.decode(value)
+            print('[ezmemory] loaded area memory for '..area_id)
+        end
     end)
 end
 

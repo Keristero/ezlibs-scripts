@@ -9,158 +9,176 @@ ezfarms = require('scripts/ezlibs-scripts/ezfarms')
 
 --local plugins = {ezweather,eznpcs,ezmemory,ezmystery,ezfarms,ezwarps,ezencounters}
 
-local plugins = {ezweather,eznpcs,ezmemory,ezmystery,ezwarps,ezencounters,ezfarms}
+local plugins = { ezweather, eznpcs, ezmemory, ezmystery, ezwarps, ezencounters, ezfarms }
 
 local sfx = {
-    hurt='/server/assets/ezlibs-assets/sfx/hurt.ogg',
-    item_get='/server/assets/ezlibs-assets/sfx/item_get.ogg',
-    recover='/server/assets/ezlibs-assets/sfx/recover.ogg',
-    card_error='/server/assets/ezlibs-assets/ezfarms/card_error.ogg'
+    hurt = '/server/assets/ezlibs-assets/sfx/hurt.ogg',
+    item_get = '/server/assets/ezlibs-assets/sfx/item_get.ogg',
+    recover = '/server/assets/ezlibs-assets/sfx/recover.ogg',
+    card_error = '/server/assets/ezlibs-assets/ezfarms/card_error.ogg'
 }
 
 local custom_script_path = 'scripts/ezlibs-custom/custom'
 local custom_plugin = helpers.safe_require(custom_script_path)
 if custom_plugin then
-    plugins[#plugins+1] = custom_plugin
+    plugins[#plugins + 1] = custom_plugin
 end
 
 eznpcs.load_npcs()
 
-function handle_battle_results(player_id, stats)
-    for i,plugin in ipairs(plugins)do
+Net:on("battle_results", function(event)
+    local stats = {
+        health=event.health,
+        time=event.time,
+        ran=event.ran,
+        emotion=event.emotion,
+        turns=event.turns,
+        enemies=event.enemies
+    }
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_battle_results then
-            plugin.handle_battle_results(player_id, stats)
+            plugin.handle_battle_results(event.player_id, stats)
         end
     end
-end
+end)
 
-function handle_shop_purchase(player_id, item_name)
-    for i,plugin in ipairs(plugins)do
+Net:on("shop_purchase", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_shop_purchase then
-            plugin.handle_shop_purchase(player_id, item_name)
+            plugin.handle_shop_purchase(event.player_id, event.item_name)
         end
     end
-end
+end)
 
-function handle_shop_close(player_id)
-    for i,plugin in ipairs(plugins)do
+Net:on("shop_close", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_shop_close then
-            plugin.handle_shop_close(player_id)
+            plugin.handle_shop_close(event.player_id)
         end
     end
-end
+end)
 
-function handle_custom_warp(player_id, object_id)
-    for i,plugin in ipairs(plugins)do
+Net:on("custom_warp", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_custom_warp then
-            plugin.handle_custom_warp(player_id, object_id)
+            plugin.handle_custom_warp(event.player_id, event.object_id)
         end
     end
-end
+end)
 
-function handle_player_move(player_id, x, y, z)
-    for i,plugin in ipairs(plugins)do
+Net:on("player_move", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_player_move then
-            plugin.handle_player_move(player_id, x, y, z)
+            plugin.handle_player_move(event.player_id, event.x, event.y, event.z)
         end
     end
-end
+end)
 
-function handle_player_request(player_id, data)
-    for i,plugin in ipairs(plugins)do
+Net:on("player_request", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_player_request then
-            plugin.handle_player_request(player_id, data)
+            plugin.handle_player_request(event.player_id, event.data)
         end
     end
-end
+end)
 
 --Pass handlers on to all the libraries we are using
-function handle_tile_interaction(player_id, x, y, z, button)
-    for i,plugin in ipairs(plugins)do
+Net:on("tile_interaction", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_tile_interaction then
-            plugin.handle_tile_interaction(player_id, x, y, z, button)
+            plugin.handle_tile_interaction(event.player_id, event.x, event.y, event.z, event.button)
         end
     end
-end
+end)
 
-function handle_post_selection(player_id, post_id)
-    for i,plugin in ipairs(plugins)do
+Net:on("post_selection", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_post_selection then
-            plugin.handle_post_selection(player_id, post_id)
+            plugin.handle_post_selection(event.player_id, event.post_id)
         end
     end
-end
+end)
 
-function handle_board_close(player_id)
-    for i,plugin in ipairs(plugins)do
+Net:on("board_close", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_board_close then
-            plugin.handle_board_close(player_id)
+            plugin.handle_board_close(event.player_id)
         end
     end
-end
+end)
 
-function handle_player_avatar_change(player_id, details)
-    for i,plugin in ipairs(plugins)do
+Net:on("player_avatar_change", function(event)
+    local details = {
+        texture_path=event.texture_path,
+        animation_path=event.animation_path,
+        name=event.name,
+        element=event.element,
+        max_health=event.max_health,
+        prevent_default=event.prevent_default
+    }
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_player_avatar_change then
-            plugin.handle_player_avatar_change(player_id, details)
+            plugin.handle_player_avatar_change(event.player_id, details)
         end
     end
-end
+end)
 
-function handle_player_join(player_id)
-
-    for i,plugin in ipairs(plugins)do
+Net:on("player_join", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_player_join then
-            plugin.handle_player_join(player_id)
+            plugin.handle_player_join(event.player_id)
         end
     end
     --Provide assets for custom events
-    for name,path in pairs(sfx) do
-        Net.provide_asset_for_player(player_id, path)
+    for name, path in pairs(sfx) do
+        Net.provide_asset_for_player(event.player_id, path)
     end
-end
+end)
 
-function handle_actor_interaction(player_id, actor_id, button)
-    for i,plugin in ipairs(plugins)do
+Net:on("actor_interaction", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_actor_interaction then
-            plugin.handle_actor_interaction(player_id,actor_id, button)
+            plugin.handle_actor_interaction(event.player_id, event.actor_id, event.button)
         end
     end
-end
+end)
 
-function tick(delta_time)
-    for i,plugin in ipairs(plugins)do
+Net:on("tick", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.on_tick then
-            plugin.on_tick(delta_time)
+            plugin.on_tick(event.delta_time)
         end
     end
-end
+end)
 
-function handle_player_disconnect(player_id)
-    for i,plugin in ipairs(plugins)do
+Net:on("player_disconnect", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_player_disconnect then
-            plugin.handle_player_disconnect(player_id)
+            plugin.handle_player_disconnect(event.player_id)
         end
     end
-end
-function handle_object_interaction(player_id, object_id, button)
-    for i,plugin in ipairs(plugins)do
+end)
+
+Net:on("object_interaction", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_object_interaction then
-            plugin.handle_object_interaction(player_id,object_id, button)
+            plugin.handle_object_interaction(event.player_id, event.object_id, event.button)
         end
     end
-end
-function handle_player_transfer(player_id)
-    for i,plugin in ipairs(plugins)do
+end)
+
+Net:on("player_area_transfer", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_player_transfer then
-            plugin.handle_player_transfer(player_id)
+            plugin.handle_player_transfer(event.player_id)
         end
     end
-end
-function handle_textbox_response(player_id, response)
-    for i,plugin in ipairs(plugins)do
+end)
+
+Net:on("textbox_response", function(event)
+    for i, plugin in ipairs(plugins) do
         if plugin.handle_textbox_response then
-            plugin.handle_textbox_response(player_id,response)
+            plugin.handle_textbox_response(event.player_id, event.response)
         end
     end
-end
+end)
