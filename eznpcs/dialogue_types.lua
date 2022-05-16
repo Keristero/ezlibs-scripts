@@ -44,7 +44,7 @@ local dialogue_types = {
     itemcheck={
         name = 'itemcheck',
         action = function(npc, player_id, dialogue, relay_object)
-            async(function ()
+            return async(function ()
                 local required_item = dialogue.custom_properties["Required Item"]
                 local next_dialogues = helpers.extract_numbered_properties(dialogue,"Next ")
                 if required_item ~= nil then
@@ -54,7 +54,7 @@ local dialogue_types = {
                     end
                     local take_item = dialogue.custom_properties["Take Item"] == "true"
                     if required_item == "money" then
-                        if ezmemory.get_player_money(player_id) >= tonumber(required_amount) then
+                        if Net.get_player_money(player_id) >= tonumber(required_amount) then
                             next_dialogue_id = next_dialogues[1]
                             if take_item then
                                 ezmemory.spend_player_money(player_id,required_amount)
