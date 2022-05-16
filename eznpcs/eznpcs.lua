@@ -11,7 +11,7 @@ local custom_events_script_path = 'scripts/events/eznpcs_events'
 local custom_events_script_loaded = false
 local generic_npc_mug_animation_path = npc_asset_folder..'mug/mug.animation'
 local npcs = {}
-local events = {}
+local events = require('scripts/ezlibs-scripts/eznpcs/dialogue_types')
 local current_player_conversation = {}
 local npc_required_properties = {"Direction","Asset Name"}
 local object_cache = {}
@@ -24,114 +24,41 @@ end
 
 --TODO load all waypoints / dialogues on server start and delete them from the map to save bandwidth
 
-function do_dialogue(npc,player_id,dialogue,relay_object)
-    --printd('doing dialogue',dialogue)
-    return async(function ()
+function eznpcs.get_dialogue_mugshot(npc,player_id,dialogue)
+    local mugshot_asset_name = npc.asset_name
+    local custom_mugshot = dialogue.custom_properties["Mugshot"]
+    local mug = {}
+    if custom_mugshot then
+        mugshot_asset_name = custom_mugshot
+    end
+    mug.texture_path = npc_asset_folder.."mug/"..mugshot_asset_name..".png"
+    mug.animation_path = npc.mug_animation_path
+    if mugshot_asset_name == "player" then
+        local player_mugshot = Net.get_player_mugshot(player_id)
+        mug.texture_path = player_mugshot.texture_path
+        mug.animation_path = player_mugshot.animation_path
+    end
+    return mug
+end
 
+function do_dialogue(npc,player_id,dialogue,relay_object)
+    return async(function ()
         local dialogue_promise = nil
 
         local area_id = Net.get_player_area(player_id)
         local dialogue_type = dialogue.custom_properties["Dialogue Type"]
         local event_name = dialogue.custom_properties["Event Name"]
-        local custom_mugshot = dialogue.custom_properties["Mugshot"]
-        local date_b = dialogue.custom_properties['Date']
-
-        local mugshot_asset_name = npc.asset_name
-        if custom_mugshot then
-            mugshot_asset_name = custom_mugshot
-        end
-
         if event_name then
-            if not events[event_name] then
-                printd("event "..event_name.." was not found, are you sure you added it?")
-                return
-            end
-            dialogue_promise = events[event_name].action(npc,player_id,dialogue,relay_object)
+            --legacy override for people still using Event Name
+            dialogue_type = event_name
         end
         if dialogue_type == nil then
             printd("dialogue "..dialogue.id.." has no Dialogue Type specified.")
             return
         end
-
-        local mug_texture_path = npc_asset_folder.."mug/"..mugshot_asset_name..".png"
-        local mug_animation_path = npc.mug_animation_path
-        if mugshot_asset_name == "player" then
-            local player_mugshot = Net.get_player_mugshot(player_id)
-            mug_texture_path = player_mugshot.texture_path
-            mug_animation_path = player_mugshot.animation_path
-        end
-    
-        local dialogue_texts = helpers.extract_numbered_properties(dialogue,"Text ")
-        local next_dialogues = helpers.extract_numbered_properties(dialogue,"Next ")
         
-        if dialogue_type == "first" then
-            dialogue_promise = async(function ()
-                local res = await(Async.message_player(player_id, dialogue_texts[1], mug_texture_path, mug_animation_path))
-                local next_id = first_value_from_table(next_dialogues)
-                return next_id
-            end)
-        elseif dialogue_type == "question" then
-            dialogue_promise = async(function ()
-                local res = await(Async.question_player(player_id, dialogue_texts[1], mug_texture_path, mug_animation_path))
-                local next_id = next_dialogues[2-res]
-                return next_id
-            end)
-        elseif dialogue_type == "random" then
-            dialogue_promise = async(function ()
-                local rnd_text_index = math.random( #dialogue_texts)
-                local res = await(Async.message_player(player_id, dialogue_texts[rnd_text_index], mug_texture_path, mug_animation_path))
-                local next_id = next_dialogues[rnd_text_index] or next_dialogues[1]
-                return next_id
-            end)
-        elseif dialogue_type == "itemcheck" then
-            --TODO PROMISIFY THIS SECTION
-            dialogue_promise = async(function ()
-                local required_item = dialogue.custom_properties["Required Item"]
-                if required_item ~= nil then
-                    local required_amount = dialogue.custom_properties["Required Amount"]
-                    if required_amount == nil then
-                        required_amount = 1
-                    end
-                    local take_item = dialogue.custom_properties["Take Item"] == "true"
-                    if required_item == "money" then
-                        if ezmemory.get_player_money(player_id) >= tonumber(required_amount) then
-                            next_dialogue_id = next_dialogues[1]
-                            if take_item then
-                                ezmemory.spend_player_money(player_id,required_amount)
-                            end
-                        else
-                            next_dialogue_id = next_dialogues[2]
-                        end
-                    else
-                        if ezmemory.count_player_item(player_id, required_item) >= tonumber(required_amount) then
-                            next_dialogue_id = next_dialogues[1]
-                            if take_item then
-                                ezmemory.remove_player_item(player_id, required_item, required_amount)
-                            end
-                        else
-                            next_dialogue_id = next_dialogues[2]
-                        end
-                    end
-                end
-                return next_dialogue_id
-            end)
-        elseif dialogue_type == "before" or dialogue_type == "after" then
-            if date_b then
-                local message = dialogue_texts[2]
-                local next_dialogue_id = next_dialogues[2]
-                if (helpers.is_now_before_date(date_b) and dialogue_type == "before") or (not helpers.is_now_before_date(date_b) and dialogue_type == "after") then
-                    message = dialogue_texts[1]
-                    next_dialogue_id = next_dialogues[1]
-                end
-                dialogue_promise = async(function ()
-                    if message then
-                        await(Async.message_player(player_id, message, mug_texture_path, mug_animation_path))
-                    end
-                    return next_dialogue_id
-                end)
-            else
-                printd('no Date specifed for time based dialogue',dialogue.id)
-            end
+        if events[dialogue_type] then
+            dialogue_promise = events[dialogue_type].action(npc,player_id,dialogue,relay_object)
         end
 
         local next_dialogue_id = await(dialogue_promise)
