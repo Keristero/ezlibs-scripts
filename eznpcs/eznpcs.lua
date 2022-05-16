@@ -1,7 +1,6 @@
 local Direction = require("scripts/ezlibs-scripts/direction")
 local helpers = require('scripts/ezlibs-scripts/helpers')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
-local eznpcs_helpers = require('scripts/ezlibs-scripts/eznpcs/eznpcs_helpers')
 local math = require('math')
 
 local eznpcs = {}
@@ -13,7 +12,7 @@ local custom_events_script_loaded = false
 local generic_npc_mug_animation_path = npc_asset_folder..'mug/mug.animation'
 local npcs = {}
 local events = {}
-local current_player_dialogue = {}
+local current_player_conversation = {}
 local npc_required_properties = {"Direction","Asset Name"}
 local object_cache = {}
 local cache_types = {"NPC","Waypoint","Dialogue"}
@@ -26,45 +25,34 @@ end
 --TODO load all waypoints / dialogues on server start and delete them from the map to save bandwidth
 
 function do_dialogue(npc,player_id,dialogue,relay_object)
+    --printd('doing dialogue',dialogue)
     return async(function ()
-        if current_player_dialogue[player_id] == dialogue.id then
-            return --player is already in this dialogue, anti spam protection
-        end
-        current_player_dialogue[player_id] = dialogue.id
+
+        local dialogue_promise = nil
+
         local area_id = Net.get_player_area(player_id)
         local dialogue_type = dialogue.custom_properties["Dialogue Type"]
         local event_name = dialogue.custom_properties["Event Name"]
         local custom_mugshot = dialogue.custom_properties["Mugshot"]
-        local should_be_cached = helpers.object_is_of_type(dialogue,cache_types)
-        if not should_be_cached then
-            print("[eznpcs] WARNING Dialogue "..dialogue.id.." at "..dialogue.x..","..dialogue.y.." in "..npc.area_id.." has incorrect type and wont be cached")
-        end
+        local date_b = dialogue.custom_properties['Date']
+
         local mugshot_asset_name = npc.asset_name
         if custom_mugshot then
             mugshot_asset_name = custom_mugshot
         end
-        local message = nil
-        local next_dialogue_id = nil
+
         if event_name then
-            if events[event_name] then
-                local next_dialogue_info = events[event_name].action(npc,player_id,dialogue,relay_object)
-                if next_dialogue_info then
-                    if next_dialogue_info.id then
-                        if not next_dialogue_info.wait_for_response then
-                            local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_info.id,object_cache,cache_types)
-                            do_dialogue(npc,player_id,dialogue,relay_object)
-                            return
-                        end
-                        next_dialogue_id = next_dialogue_info.id
-                    end
-                end
-            else
-                print("[eznpcs] event "..event_name.." was not found, are you sure you added it?")
+            if not events[event_name] then
+                printd("event "..event_name.." was not found, are you sure you added it?")
+                return
             end
+            dialogue_promise = events[event_name].action(npc,player_id,dialogue,relay_object)
         end
         if dialogue_type == nil then
+            printd("dialogue "..dialogue.id.." has no Dialogue Type specified.")
             return
         end
+
         local mug_texture_path = npc_asset_folder.."mug/"..mugshot_asset_name..".png"
         local mug_animation_path = npc.mug_animation_path
         if mugshot_asset_name == "player" then
@@ -72,24 +60,32 @@ function do_dialogue(npc,player_id,dialogue,relay_object)
             mug_texture_path = player_mugshot.texture_path
             mug_animation_path = player_mugshot.animation_path
         end
-        local player_pos = Net.get_player_position(player_id)
     
-        local dialogue_texts = eznpcs_helpers.extract_numbered_properties(dialogue,"Text ")
-        local next_dialogues = eznpcs_helpers.extract_numbered_properties(dialogue,"Next ")
+        local dialogue_texts = helpers.extract_numbered_properties(dialogue,"Text ")
+        local next_dialogues = helpers.extract_numbered_properties(dialogue,"Next ")
         
-        if dialogue_type == "first" or  dialogue_type == "question" then
-            message = dialogue_texts[1]
-            local next_id = first_value_from_table(next_dialogues)
-            next_dialogue_id = next_id
-        end
-    
-        if dialogue_type == "random" then
-            local rnd_text_index = math.random( #dialogue_texts)
-            message = dialogue_texts[rnd_text_index]
-            next_dialogue_id = next_dialogues[rnd_text_index] or next_dialogues[1]
-        end
-    
-        if dialogue_type == "itemcheck" then
+        if dialogue_type == "first" then
+            dialogue_promise = async(function ()
+                local res = await(Async.message_player(player_id, dialogue_texts[1], mug_texture_path, mug_animation_path))
+                local next_id = first_value_from_table(next_dialogues)
+                return next_id
+            end)
+        elseif dialogue_type == "question" then
+            dialogue_promise = async(function ()
+                local res = await(Async.question_player(player_id, dialogue_texts[1], mug_texture_path, mug_animation_path))
+                local next_id = next_dialogues[2-res]
+                return next_id
+            end)
+        elseif dialogue_type == "random" then
+            dialogue_promise = async(function ()
+                local rnd_text_index = math.random( #dialogue_texts)
+                local res = await(Async.message_player(player_id, dialogue_texts[rnd_text_index], mug_texture_path, mug_animation_path))
+                local next_id = next_dialogues[rnd_text_index] or next_dialogues[1]
+                return next_id
+            end)
+        elseif dialogue_type == "itemcheck" then
+            printd('itemcheck')
+            --TODO PROMISIFY THIS SECTION
             local required_item = dialogue.custom_properties["Required Item"]
             if required_item ~= nil then
                 local required_amount = dialogue.custom_properties["Required Amount"]
@@ -117,72 +113,43 @@ function do_dialogue(npc,player_id,dialogue,relay_object)
                     end
                 end
             end
-        end
-    
-        --date based events
-        local date_b = dialogue.custom_properties['Date']
-        if dialogue_type == "before" then
+        elseif dialogue_type == "before" or dialogue_type == "after" then
             if date_b then
-                message = dialogue_texts[2]
-                next_dialogue_id = next_dialogues[2]
-                if eznpcs_helpers.is_now_before_date(date_b) then
+                local message = dialogue_texts[2]
+                local next_dialogue_id = next_dialogues[2]
+                if (helpers.is_now_before_date(date_b) and dialogue_type == "before") or (not helpers.is_now_before_date(date_b) and dialogue_type == "after") then
                     message = dialogue_texts[1]
                     next_dialogue_id = next_dialogues[1]
                 end
+                dialogue_promise = async(function ()
+                    if message then
+                        await(Async.message_player(player_id, message, mug_texture_path, mug_animation_path))
+                    end
+                    return next_dialogue_id
+                end)
+            else
+                printd('no Date specifed for time based dialogue',dialogue.id)
             end
         end
-        if dialogue_type == "after" then
-            if date_b then
-                message = dialogue_texts[2]
-                next_dialogue_id = next_dialogues[2]
-                if not eznpcs_helpers.is_now_before_date(date_b) then
-                    message = dialogue_texts[1]
-                    next_dialogue_id = next_dialogues[1]
-                end
-            end
-        end
-        if not npc.dont_face_player then
-            Net.set_bot_direction(npc.bot_id, Direction.from_points(npc, player_pos))
-        end
-    
-        if message == nil and next_dialogue_id ~= nil then
-            --If we know what dialogue is next but we have no message to send
-            --Do the next dialogue now
-            local area_id = Net.get_player_area(player_id)
-            local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_id,object_cache,cache_types)
-            do_dialogue(npc,player_id,dialogue,relay_object)
+
+        local next_dialogue_id = await(dialogue_promise)
+        if not next_dialogue_id then
             return
         end
-            
-        local response = nil
-        if dialogue_type ~= "none" then
-            if dialogue_type == "question" then
-                response = Async.await(Async.question_player(player_id, message, mug_texture_path, mug_animation_path))
-            else
-                response = Async.await(Async.message_player(player_id, message, mug_texture_path, mug_animation_path))
-            end
+
+        local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_id,object_cache,cache_types)
+        if not dialogue then
+            return
         end
-    
-        end_conversation(player_id)
-        if dialogue_type == "question" then
-            local next_index = 2
-            if response == 1 then
-                next_index = 1
-            end
-            next_dialogue_id = next_dialogues[next_index]
-        end
-        if next_dialogue_id then
-            local area_id = Net.get_player_area(player_id)
-            local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_id,object_cache,cache_types)
-            do_dialogue(npc,player_id,dialogue,relay_object)
-        else
-            Net.set_bot_direction(npc.bot_id, npc.direction)
-        end
+        return await(do_dialogue(npc,player_id,dialogue,relay_object))
     end)
 end
 
 function create_bot_from_object(area_id,object_id)
     local placeholder_object = helpers.get_object_by_id_cached(area_id, object_id,object_cache,cache_types)
+    if not placeholder_object then
+        return
+    end
     local x = placeholder_object.x
     local y = placeholder_object.y
     local z = placeholder_object.z
@@ -276,20 +243,43 @@ function add_behaviour(npc,behaviour)
     end
 end
 
+function clear_player_conversation(player_id)
+    local bot_id = current_player_conversation[player_id]
+    if bot_id then
+        local npc = npcs[bot_id]
+        if not npc.dont_face_player then
+            Net.set_bot_direction(npc.bot_id, npc.direction)
+        end
+        current_player_conversation[player_id] = nil
+    end
+end
+
 --Behaviour factories
 function chat_behaviour()
     behaviour = {
         type='on_interact',
         action=function(npc,player_id,relay_object)
-            local dialogue = npc.first_dialogue
-            do_dialogue(npc,player_id,dialogue,relay_object)
+            return async(function ()
+                if current_player_conversation[player_id] == npc.bot_id then
+                    --this player is already in a conversation with this npc
+                    return
+                end
+                --printd('started talking to npc')
+                current_player_conversation[player_id] = npc.bot_id
+
+                if not npc.dont_face_player then
+                    local player_pos = Net.get_player_position(player_id)
+                    Net.set_bot_direction(npc.bot_id, Direction.from_points(npc, player_pos))
+                end
+
+                local dialogue = npc.first_dialogue
+                await(do_dialogue(npc,player_id,dialogue,relay_object))
+                --printd('finished talking to npc')
+                clear_player_conversation(player_id)
+            end)
         end
     }
     return behaviour
-end
-
-function end_conversation(player_id)
-    current_player_dialogue[player_id] = nil
 end
 
 function waypoint_follow_behaviour(first_waypoint_id)
@@ -321,7 +311,11 @@ function do_actor_interaction(player_id,actor_id,relay_object)
 end
 
 function is_anyone_talking_to_npc(npc_id)
-    --TODO fix this function
+    for player_id, chatty_npc_id in pairs(current_player_conversation) do
+        if npc_id == chatty_npc_id then
+            return true
+        end
+    end
     return false
 end
 
@@ -352,7 +346,7 @@ function move_npc(npc,delta_time)
     new_pos.x = npc.x + vel_x * delta_time
     new_pos.y = npc.y + vel_y * delta_time
 
-    if eznpcs_helpers.position_overlaps_something(new_pos,area_id) then
+    if helpers.position_overlaps_something(new_pos,area_id) then
         return
     end
 
@@ -370,6 +364,7 @@ function on_npc_reached_waypoint(npc,waypoint)
     if waypoint.custom_properties['Wait Time'] ~= nil then
         npc.wait_time = tonumber(waypoint.custom_properties['Wait Time'])
         if waypoint.custom_properties['Direction'] ~= nil then
+            npc.direction = waypoint.custom_properties['Direction']
             Net.set_bot_direction(npc.bot_id, waypoint.custom_properties['Direction'])
         end
     end
@@ -378,7 +373,7 @@ function on_npc_reached_waypoint(npc,waypoint)
         waypoint_type = waypoint.custom_properties["Waypoint Type"]
     end
     --select next waypoint based on Waypoint Type
-    local next_waypoints = eznpcs_helpers.extract_numbered_properties(waypoint,"Next Waypoint ")
+    local next_waypoints = helpers.extract_numbered_properties(waypoint,"Next Waypoint ")
     local next_waypoint_id = nil
     if waypoint_type == "first" then
         next_waypoint_id = first_value_from_table(next_waypoints)
@@ -392,7 +387,7 @@ function on_npc_reached_waypoint(npc,waypoint)
     if waypoint_type == "before" then
         if date_b then
             next_waypoint_id = next_waypoints[2]
-            if eznpcs_helpers.is_now_before_date(date_b) then
+            if helpers.is_now_before_date(date_b) then
                 next_waypoint_id = next_waypoints[1]
             end
         end
@@ -400,7 +395,7 @@ function on_npc_reached_waypoint(npc,waypoint)
     if waypoint_type == "after" then
         if date_b then
             next_waypoint_id = next_waypoints[2]
-            if not eznpcs_helpers.is_now_before_date(date_b) then
+            if not helpers.is_now_before_date(date_b) then
                 next_waypoint_id = next_waypoints[1]
             end
         end
@@ -434,15 +429,15 @@ function eznpcs.load_npcs()
 end
 
 function eznpcs.add_event(event_object)
-    if event_object.name and event_object.action then
-        if events[event_object.name] then
-            printd('WARNING event '..event_object.name..' already exists and will be replaced')
-        end
-        events[event_object.name] = event_object
-        printd('added event '..event_object.name)
-    else
+    if not (event_object.name and event_object.action) then
         printd('Cant add invalid event, events need a name and action {}')
+        return
     end
+    if events[event_object.name] then
+        printd('WARNING event '..event_object.name..' already exists and will be replaced')
+    end
+    events[event_object.name] = event_object
+    printd('added event '..event_object.name)
 end
 function eznpcs.create_npc_from_object(area_id,object_id)
     return ( create_bot_from_object(area_id,object_id) )
@@ -468,11 +463,11 @@ function eznpcs.create_npc(area_id,asset_name,x,y,z,direction,bot_name,animation
 end
 
 function eznpcs.handle_player_transfer(player_id)
-    end_conversation(player_id)
+    clear_player_conversation(player_id)
 end
   
 function eznpcs.handle_player_disconnect(player_id)
-    end_conversation(player_id)
+    clear_player_conversation(player_id)
 end
 
 function eznpcs.handle_object_interaction(player_id, object_id)

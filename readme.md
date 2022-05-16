@@ -182,6 +182,7 @@ or you can use wildcards which will always behave as the current time for that c
 
 ### DialogueEvents
 - you can add custom logic for dialogues using `eznpcs.add_event(event_object)`
+- dialogue events must return promises, see the example
 - eznpcs will automatically try and load the file `/server/scripts/events/eznpcs_events.lua` for this purpose, so create that file and add events from there
 - loaded events will activated when a player reaches a dialogue during a conversation with a matching `Event Name` custom property
 - the action of the event is a callback which allows for any and all custom interactions.
@@ -198,27 +199,24 @@ or you can use wildcards which will always behave as the current time for that c
 - expected return types
     - nil
         - will end the conversation
-    - table
-        - table with `wait_for_response` (bool) and `id` (string)
-        - `wait_for_response` should be true if you sending any messages to the player in this event.
-        - `id` should be the object id of the next dialogue you want to trigger after this one (if any)
+    - number
+        - id of the next dialogue object that you want to trigger after this, usually get it from a custom property on the current dialogue object.
 
 *Here is an example dialogue event where a sound effect plays and the player enjoys gravy*
 ```lua
+local eznpcs = require('scripts/ezlibs-scripts/eznpcs/eznpcs')
 local sfx = {
     recover='/server/assets/ezlibs-assets/sfx/recover.ogg',
 }
 local some_event = {
-    name="Drink Gravy",
-    action=function (npc,player_id,dialogue,relay_object)
-        local player_mugshot = Net.get_player_mugshot(player_id)
-        Net.play_sound_for_player(player_id,sfx.recover)
-        Net.message_player(player_id,"\x01...\x01mmm gravy yum",player_mugshot.texture_path,player_mugshot.animation_path)
-        local next_dialouge_options = {
-            wait_for_response=true,
-            id=dialogue.custom_properties["Next 1"]
-        }
-        return next_dialouge_options
+    name = "Drink Gravy",
+    action = function(npc, player_id, dialogue, relay_object)
+        return async(function()
+            local player_mugshot = Net.get_player_mugshot(player_id)
+            Net.play_sound_for_player(player_id, sfx.recover)
+            Net.message_player(player_id, "\x01...\x01mmm gravy yum", player_mugshot.texture_path, player_mugshot.animation_path)
+            return dialogue.custom_properties["Next 1"]
+        end)
     end
 }
 eznpcs.add_event(some_event)
