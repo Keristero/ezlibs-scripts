@@ -123,6 +123,16 @@ Custom properties:
         - if the current time is before `Date`, `Text 1` will be displayed, otherwise `Text 2`, it will go to the respective `Next x` dialogue node afterwards
     - `after`
         - same as `before`, checks if current time is after `Date`
+    - `shop`
+        - will open a shop where the player can buy items
+        - add items to the shop with `Item #`(object) custom properties
+        - item objects should have these properties:
+            - Description (string) *default is ???*
+            - Is Key (bool) *default is false*
+            - Name (string) *default is ???*
+            - Price (int) *default is 9999999*
+        - after the shop is closed the first `Next #` dialogue will be triggered
+
     - `none`
         - usually used with `Event Name`, no dialogue, but the event will still be triggered
         

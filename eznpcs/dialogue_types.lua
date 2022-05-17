@@ -118,6 +118,52 @@ local dialogue_types = {
                 return next_dialogue_id
             end)
         end
+    },
+    shop={
+        name = "shop",
+        action = function(npc, player_id, dialogue, relay_object)
+            return async(function ()
+                local area_id = Net.get_player_area(player_id)
+                local shop_item_object_ids = helpers.extract_numbered_properties(dialogue,"Item ")
+                local next_dialogues = helpers.extract_numbered_properties(dialogue,"Next ")
+                local shop_items = {}
+                local shop_item_indexes = {}
+
+                --create list of items for sale
+                for i, item_object_id in ipairs(shop_item_object_ids) do
+                    local item_info_object = Net.get_object_by_id(area_id,item_object_id)
+                    local item_info = item_info_object.custom_properties
+                    if item_info then
+                        local shop_item = {
+                            name=item_info["Name"] or "???",
+                            price=tonumber(item_info["Price"] or 9999999),
+                            description=item_info["Description"] or "???",
+                            is_key=item_info["Is Key"] == 'true'
+                        }
+                        table.insert(shop_items,shop_item)
+                        shop_item_indexes[shop_item.name] = #shop_items
+                    end
+                end
+
+                local mugshot = eznpcs.get_dialogue_mugshot(npc,player_id,dialogue)
+                local shop = Net.open_shop(player_id, shop_items, mugshot.texture_path, mugshot.animation_path)
+                local async_iter = shop:async_iter_all()
+
+                --process shop events until the shop closes
+                for event_name, event_data in Async.await(async_iter) do
+                    if event_name == 'shop_purchase' then
+                        local item = shop_items[shop_item_indexes[event_data.item_name]]
+                        if ezmemory.spend_player_money(player_id,item.price) then
+                            ezmemory.create_or_update_item(item.name,item.description,item.is_key)
+                            ezmemory.give_player_item(player_id,item.name,1)
+                        end
+                    end
+                end
+
+                local next_id = first_value_from_table(next_dialogues)
+                return next_id
+            end)
+        end
     }
 }
 
