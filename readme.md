@@ -127,10 +127,10 @@ Custom properties:
         - will open a shop where the player can buy items
         - add items to the shop with `Item #`(object) custom properties
         - item objects should have these properties:
-            - Description (string) *default is ???*
-            - Is Key (bool) *default is false*
-            - Name (string) *default is ???*
-            - Price (int) *default is 9999999*
+            - `Description` string (*default is ???*)
+            - `Is Key` bool (*default is false*)
+            - `Name` string (*default is ???*)
+            - `Price` int (*default is 9999999*)
         - after the shop is closed the first `Next #` dialogue will be triggered
 
     - `none`
