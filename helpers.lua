@@ -26,10 +26,12 @@ end
 
 function helpers.extract_numbered_properties(object,property_prefix)
     local out_table = {}
-    for i=1,10 do
+    for i=1,99 do
         local text = object.custom_properties[property_prefix..i]
         if text then
             out_table[i] = text
+        else
+            return out_table
         end
     end
     return out_table

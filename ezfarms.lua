@@ -343,26 +343,6 @@ function try_buy_seed(player_id,plant_name)
     
 end
 
-local seed_stall = {
-    name="seed_stall",
-    action=function (npc,player_id,dialogue)
-        local board_color = { r= 128, g= 255, b= 128 }
-        local posts = {}
-        for plant_name, data in pairs(PlantData) do
-            if data.price then
-                --If the plant is for sale (has a price)
-                local seed_name = plant_name.." seed"
-                posts[#posts+1] = { id=plant_name, read=true, title=seed_name , author=tostring(data.price) }
-            end
-        end
-        local bbs_name = "Buy Seeds"
-        players_using_bbs[player_id] = bbs_name
-        Net.open_board(player_id, bbs_name, board_color, posts)
-        return nil
-    end
-}
-eznpcs.add_event(seed_stall)
-
 local function list_plants(player_id)
     local safe_secret = helpers.get_safe_player_secret(player_id)
     local player_memory = ezmemory.get_player_memory(safe_secret)
@@ -382,16 +362,17 @@ end
 local veggie_stall = {
     name="veggie_stall",
     action=function (npc,player_id,dialogue)
-        local board_color = { r= 128, g= 255, b= 128 }
-        local posts = {}
-        local player_plants = list_plants(player_id)
-        for plant_name, sell_price in pairs(player_plants) do
-            posts[#posts+1] = { id=plant_name, read=true, title=plant_name , author=tostring(sell_price) }
-        end
-        local bbs_name = "Sell Veggies"
-        players_using_bbs[player_id] = bbs_name
-        Net.open_board(player_id, bbs_name, board_color, posts)
-        return nil
+        return async(function ()
+            local board_color = { r= 128, g= 255, b= 128 }
+            local posts = {}
+            local player_plants = list_plants(player_id)
+            for plant_name, sell_price in pairs(player_plants) do
+                posts[#posts+1] = { id=plant_name, read=true, title=plant_name , author=tostring(sell_price) }
+            end
+            local bbs_name = "Sell Veggies"
+            players_using_bbs[player_id] = bbs_name
+            Net.open_board(player_id, bbs_name, board_color, posts)
+        end)
     end
 }
 eznpcs.add_event(veggie_stall)

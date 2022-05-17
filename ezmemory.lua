@@ -326,6 +326,29 @@ function ezmemory.count_player_item(player_id, item_name)
     return 0
 end
 
+function ezmemory.open_shop_async(player_id,shop_items,mugshot_texture_path,mugshot_animation_path)
+    return async(function ()
+        --print('[ezmemory] opened shop with items',shop_items)
+        local shop = Net.open_shop(player_id, shop_items, mugshot_texture_path, mugshot_animation_path)
+        local async_iter = shop:async_iter_all()
+        local shop_items_by_name = {}
+        for index, value in ipairs(shop_items) do
+            shop_items_by_name[value.name] = value
+        end
+
+        --process shop events until the shop closes
+        for event_name, event_data in Async.await(async_iter) do
+            if event_name == 'shop_purchase' then
+                local item = shop_items_by_name[event_data.item_name]
+                if ezmemory.spend_player_money(player_id,item.price) then
+                    ezmemory.create_or_update_item(item.name,item.description,item.is_key)
+                    ezmemory.give_player_item(player_id,item.name,1)
+                end
+            end
+        end
+    end)
+end
+
 function ezmemory.hide_object_from_player_till_disconnect(player_id,area_id,object_id)
     object_id = tostring(object_id)
     local player_area = Net.get_player_area(player_id)
