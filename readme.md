@@ -118,6 +118,9 @@ Custom properties:
     - `question`
         - prompts the player to choose yes or no, with `Text 1` as the prompt text
         - afterwards the dialogues `Next 1` or `Next 2` will be triggered, matching the player's choice.
+    - `quiz`
+        - presents up to 3 options based on `Text 1`, `Text 2`, and `Text 3`
+        - afterwards the dialogues `Next 1`, `Next 2`, or `Next 3` will be triggered, matching the player's choice.
     - `before`
         - compares current time against [`Date`](#Date) custom property
         - if the current time is before `Date`, `Text 1` will be displayed, otherwise `Text 2`, it will go to the respective `Next x` dialogue node afterwards

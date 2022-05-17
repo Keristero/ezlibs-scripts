@@ -27,6 +27,19 @@ local dialogue_types = {
             end)
         end
     },
+    quiz={
+        name = "quiz",
+        action = function(npc, player_id, dialogue, relay_object)
+            return async(function ()
+                local dialogue_texts = helpers.extract_numbered_properties(dialogue,"Text ")
+                local next_dialogues = helpers.extract_numbered_properties(dialogue,"Next ")
+                local mugshot = eznpcs.get_dialogue_mugshot(npc,player_id,dialogue)
+                local res = await(Async.quiz_player(player_id, dialogue_texts[1],dialogue_texts[2],dialogue_texts[3], mugshot.texture_path, mugshot.animation_path))
+                local next_id = next_dialogues[res+1]
+                return next_id
+            end)
+        end
+    },
     random={
         name = "random",
         action = function(npc, player_id, dialogue, relay_object)
