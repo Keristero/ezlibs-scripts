@@ -116,23 +116,22 @@ function add_landing(area_id, incoming_data, x, y, z, direction, warp_in, arriva
 end
 
 function doAnimationForWarp(player_id,animation_name,is_leave_animation,warp_object)
-    log('doing special animation '..animation_name)
-    players_in_animations[player_id] = true
-    if warp_object and warp_object.custom_properties["Dont Teleport"] == "true" then
-        players_in_animations[player_id] = nil
-    end
-    Net.lock_player_input(player_id)
-    local animation_properties = special_animations[animation_name]
-    local animation_duration = 0
-    if animation_properties then
-        animation_properties.animate(player_id,warp_object)
-        animation_duration = animation_duration + animation_properties.duration-0.1
-        delay.for_player(player_id,function ()
+    return async(function()
+        log('doing special animation '..animation_name)
+        players_in_animations[player_id] = true
+        if warp_object and warp_object.custom_properties["Dont Teleport"] == "true" then
+            players_in_animations[player_id] = nil
+        end
+        Net.lock_player_input(player_id)
+        local animation_properties = special_animations[animation_name]
+        local animation_duration = 0
+        if animation_properties then
+            await(animation_properties.animate(player_id,warp_object))
             log('animation complete '..animation_name)
             player_animations[player_id] = nil
             Net.unlock_player_input(player_id)
-        end,animation_duration)
-    end
+        end
+    end)
 end
 
 -- Adds the given radius warp to the list of detected radius warps
@@ -280,40 +279,38 @@ end
 --area_id=area_id
 
 function use_warp(player_id,warp_object,warp_meta)
-    local warp_properties = warp_object.custom_properties
-    local is_valid_warp = false
-    local is_remote_warp = false
+    return async(function
+        local warp_properties = warp_object.custom_properties
+        local is_valid_warp = false
+        local is_remote_warp = false
 
-    if warp_properties.Address and warp_properties.Port then
-        is_remote_warp = true
-        is_valid_warp = true
-    end
-
-    if warp_meta then
-        if warp_meta.target_object and warp_meta.target_area then
-            is_remote_warp = false
+        if warp_properties.Address and warp_properties.Port then
+            is_remote_warp = true
             is_valid_warp = true
         end
-    end
 
-    if warp_object.custom_properties["Dont Teleport"] then
-        is_valid_warp = true
-    end
+        if warp_meta then
+            if warp_meta.target_object and warp_meta.target_area then
+                is_remote_warp = false
+                is_valid_warp = true
+            end
+        end
 
-    if is_valid_warp == false then
-        log('warp '..warp_object.id..' is invalid')
-        return
-    end
+        if warp_object.custom_properties["Dont Teleport"] then
+            is_valid_warp = true
+        end
 
-    local warp_out = warp_properties["Warp Out"] == "True"
-    local warp_in = warp_properties["Warp In"] == "True"
-    local data = warp_properties.Data
-    local warp_delay = 0
-    if warp_properties["Leave Animation"] and warp_properties["Leave Animation"] ~= "" then
-        doAnimationForWarp(player_id,warp_properties["Leave Animation"],true,warp_object)
-        warp_delay = special_animations[warp_properties["Leave Animation"]].duration
-    end
-    delay.for_player(player_id,function ()
+        if is_valid_warp == false then
+            log('warp '..warp_object.id..' is invalid')
+            return
+        end
+
+        local warp_out = warp_properties["Warp Out"] == "True"
+        local warp_in = warp_properties["Warp In"] == "True"
+        local data = warp_properties.Data
+        if warp_properties["Leave Animation"] and warp_properties["Leave Animation"] ~= "" then
+            await(doAnimationForWarp(player_id,warp_properties["Leave Animation"],true,warp_object))
+        end
         if is_remote_warp then
             Net.transfer_server(player_id, warp_properties.Address, warp_properties.Port, warp_out, data)
         else
@@ -338,7 +335,7 @@ function use_warp(player_id,warp_object,warp_meta)
             end
         end
         player_interactions[player_id] = nil
-    end,warp_delay)
+    end)
 end
 
 function ezwarps.handle_custom_warp(player_id, object_id)
