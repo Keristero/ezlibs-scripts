@@ -1,4 +1,5 @@
 helpers = require('scripts/ezlibs-scripts/helpers')
+ezcache = require('scripts/ezlibs-scripts/ezcache')
 ezencounters = require('scripts/ezlibs-scripts/ezencounters/main')
 eznpcs = require('scripts/ezlibs-scripts/eznpcs/eznpcs')
 ezmemory = require('scripts/ezlibs-scripts/ezmemory')
