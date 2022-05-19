@@ -74,7 +74,7 @@ function collect_datum(player_id,object,datum_id_override)
         return
     end
     if object.type ~= "Mystery Data" and object.type ~= "Mystery Datum" then
-        local should_be_cached = helpers.object_is_of_type(object,{"Mystery Option"})
+        local should_be_cached = ezcache.object_is_of_type(object,{"Mystery Option"})
         if not should_be_cached then
             warn("[ezmystery] WARNING Mystery Option "..object.id.." at "..object.x..","..object.y.." in "..area_id.." has incorrect type and wont be cached")
         end

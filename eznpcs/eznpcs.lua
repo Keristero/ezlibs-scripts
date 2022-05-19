@@ -285,7 +285,7 @@ function move_npc(npc,delta_time)
 end
 
 function on_npc_reached_waypoint(npc,waypoint)
-    local should_be_cached = helpers.object_is_of_type(waypoint,cache_types)
+    local should_be_cached = ezcache.object_is_of_type(waypoint,{"Waypoint"})
     if not should_be_cached then
         print("[eznpcs] WARNING Waypoint "..waypoint.id.." at "..waypoint.x..","..waypoint.y.." in "..npc.area_id.." has incorrect type and wont be cached")
     end
