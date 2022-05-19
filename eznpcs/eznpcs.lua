@@ -15,7 +15,6 @@ local events = require('scripts/ezlibs-scripts/eznpcs/dialogue_types')
 local current_player_conversation = {}
 local npc_required_properties = {"Direction","Asset Name"}
 local object_cache = {}
-local cache_types = {"NPC","Waypoint","Dialogue"}
 
 function printd(...)
     local arg={...}
@@ -66,7 +65,7 @@ function do_dialogue(npc,player_id,dialogue,relay_object)
             return
         end
 
-        local dialogue = helpers.get_object_by_id_cached(area_id,next_dialogue_id,object_cache,cache_types)
+        local dialogue = ezcache.get_object_by_id_cached(area_id,next_dialogue_id)
         if not dialogue then
             return
         end
@@ -75,7 +74,7 @@ function do_dialogue(npc,player_id,dialogue,relay_object)
 end
 
 function create_bot_from_object(area_id,object_id)
-    local placeholder_object = helpers.get_object_by_id_cached(area_id, object_id,object_cache,cache_types)
+    local placeholder_object = ezcache.get_object_by_id_cached(area_id, object_id)
     if not placeholder_object then
         return
     end
@@ -215,7 +214,7 @@ function waypoint_follow_behaviour(first_waypoint_id)
     behaviour = {
         type='on_tick',
         initialize=function(npc)
-            local first_waypoint = helpers.get_object_by_id_cached(npc.area_id, first_waypoint_id,object_cache,cache_types)
+            local first_waypoint = ezcache.get_object_by_id_cached(npc.area_id, first_waypoint_id)
             if first_waypoint then
                 npc.next_waypoint = first_waypoint
             else
@@ -286,7 +285,7 @@ function move_npc(npc,delta_time)
 end
 
 function on_npc_reached_waypoint(npc,waypoint)
-    local should_be_cached = helpers.object_is_of_type(waypoint,cache_types)
+    local should_be_cached = ezcache.object_is_of_type(waypoint,{"Waypoint"})
     if not should_be_cached then
         print("[eznpcs] WARNING Waypoint "..waypoint.id.." at "..waypoint.x..","..waypoint.y.." in "..npc.area_id.." has incorrect type and wont be cached")
     end
@@ -331,7 +330,7 @@ function on_npc_reached_waypoint(npc,waypoint)
     end
 
     if next_waypoint_id then
-        npc.next_waypoint = helpers.get_object_by_id_cached(npc.area_id,next_waypoint_id,object_cache,cache_types)
+        npc.next_waypoint = ezcache.get_object_by_id_cached(npc.area_id,next_waypoint_id)
     end
 end
 
@@ -339,7 +338,7 @@ function add_npcs_to_area(area_id)
     --Loop over all objects in area, spawning NPCs for each NPC type object.
     local objects = Net.list_objects(area_id)
     for i, object_id in next, objects do
-        local object = helpers.get_object_by_id_cached(area_id, object_id,object_cache,cache_types)
+        local object = ezcache.get_object_by_id_cached(area_id, object_id)
         if object.type == "NPC" then
             create_bot_from_object(area_id, object_id)
         end
