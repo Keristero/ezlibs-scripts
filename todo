@@ -1,2 +1,2 @@
-1. add distance helper to helpers to be used for eznpcs
-1. make shared library for handling triggering of events based on where a player is walking (ezevents?), use this for radius warps and radius encounters
+1. rewrite ezwarps and have it depend on ezanimations
+1. make ezmystery use async

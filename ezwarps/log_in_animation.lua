@@ -1,5 +1,3 @@
-local delay = require('scripts/ezlibs-scripts/delay')
-
 function create_jack_in_out_animation(is_arriving)
     local log_in_animation = {
         --these offsets will modify the warp landing location so that the player can animate from their spawn location nicely

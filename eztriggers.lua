@@ -1,6 +1,23 @@
 local eztriggers = {}
 
+eztriggers.interact_triggers = {}
 eztriggers.radius_triggers = {}
+
+function eztriggers.add_interact_trigger(area_id,trigger_object)
+    if not trigger_object then
+        return nil
+    end
+    if not eztriggers.interact_triggers[area_id] then
+        eztriggers.interact_triggers[area_id] = {}
+    end
+    if not eztriggers.interact_triggers[area_id][trigger_object.id] then
+        local emitter = Net.EventEmitter.new()
+        eztriggers.interact_triggers[area_id][trigger_object.id] = {object:trigger_object,emitter:emitter}
+    else
+        warn(trigger_object.id.." is already registered as a interact trigger")
+    end
+    return emitter
+end
 
 function eztriggers.add_radius_trigger(area_id,trigger_object)
     if not trigger_object then
@@ -17,6 +34,20 @@ function eztriggers.add_radius_trigger(area_id,trigger_object)
     end
     return emitter
 end
+
+function ezwarps.handle_object_interaction(player_id,object_id,button)
+    --check interact triggers
+    local player_area = Net.get_player_area(player_id)
+    if not eztriggers.interact_triggers[player_area] then 
+        return 
+    end
+    for trigger_id, trigger_info in pairs(eztriggers.interact_triggers[player_area]) do
+        if object_id == trigger_id then
+            trigger_info.emitter.emit("interaction",{player_id:player_id,object_id:trigger_id,button:button})
+        end
+    end
+end
+
 
 function eztriggers.handle_player_move(player_id, x, y, z)
     --check radius triggers

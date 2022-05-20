@@ -1,4 +1,3 @@
-local delay = require('scripts/ezlibs-scripts/delay')
 local ezweather = require('scripts/ezlibs-scripts/ezweather')
 
 local Direction = {
@@ -46,46 +45,49 @@ function create_arrow_animation(is_arriving,direction_str)
         },
         duration = animation_length,--delay in seconds from start of animation till player warps out
         animate=function(player_id)
-            local player_pos = Net.get_player_position(player_id)
-            local area_id = Net.get_player_area(player_id)
-            local weather = ezweather.get_area_weather(area_id)
-            local player_keyframes = {}
-            if is_arriving then
+            return async(function
+                local player_pos = Net.get_player_position(player_id)
+                local area_id = Net.get_player_area(player_id)
+                local weather = ezweather.get_area_weather(area_id)
+                local player_keyframes = {}
+                if is_arriving then
+                    player_keyframes[#player_keyframes+1] = {
+                        properties={{
+                            property="X",
+                            ease="Linear",
+                            value=player_pos.x,
+                        },
+                        {
+                            property="Y",
+                            ease="Linear",
+                            value=player_pos.y
+                        }},
+                        duration=0
+                    }
+                    Net.fade_player_camera(player_id, weather.camera_tint, 0.5)
+                    Net.move_player_camera(player_id, player_pos.x+x_distance, player_pos.y+y_distance, player_pos.z, animation_length)
+                    Net.unlock_player_camera(player_id)
+                else
+                    Net.fade_player_camera(player_id, {r=0, g=0, b=0, a=255}, 0.5)
+                    Net.slide_player_camera(player_id, player_pos.x+x_distance, player_pos.y+y_distance, player_pos.z, animation_length)
+                    Net.unlock_player_camera(player_id)
+                end
                 player_keyframes[#player_keyframes+1] = {
                     properties={{
                         property="X",
                         ease="Linear",
-                        value=player_pos.x,
+                        value=player_pos.x+x_distance
                     },
                     {
                         property="Y",
                         ease="Linear",
-                        value=player_pos.y
+                        value=player_pos.y+y_distance
                     }},
-                    duration=0
+                    duration=animation_length
                 }
-                Net.fade_player_camera(player_id, weather.camera_tint, 0.5)
-                Net.move_player_camera(player_id, player_pos.x+x_distance, player_pos.y+y_distance, player_pos.z, animation_length)
-                Net.unlock_player_camera(player_id)
-            else
-                Net.fade_player_camera(player_id, {r=0, g=0, b=0, a=255}, 0.5)
-                Net.slide_player_camera(player_id, player_pos.x+x_distance, player_pos.y+y_distance, player_pos.z, animation_length)
-                Net.unlock_player_camera(player_id)
-            end
-            player_keyframes[#player_keyframes+1] = {
-                properties={{
-                    property="X",
-                    ease="Linear",
-                    value=player_pos.x+x_distance
-                },
-                {
-                    property="Y",
-                    ease="Linear",
-                    value=player_pos.y+y_distance
-                }},
-                duration=animation_length
-            }
-            Net.animate_player_properties(player_id,player_keyframes)
+                Net.animate_player_properties(player_id,player_keyframes)
+                await(Async.sleep(animation_length))
+            end)
         end
     }
     return new_animation
