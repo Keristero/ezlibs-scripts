@@ -10,9 +10,6 @@ local named_encounters = {}
 local provided_encounter_assets = {}
 local encounter_finished_callbacks = {}
 
-local radius_encounters = {}
-local radius_encounter_type = "Radius Encounter"
-
 local load_encounters_for_areas = function ()
     local areas = Net.list_areas()
     local area_encounter_tables = {}
@@ -96,38 +93,6 @@ ezencounters.handle_player_move = function(player_id, x, y, z)
         player_last_position[player_id] = {x=rounded_pos_x,y=rounded_pos_y,z=rounded_pos_z}
     end
     ezencounters.increment_steps_since_encounter(player_id)
-
-    --Now check radius encounters
-    local player_area = Net.get_player_area(player_id)
-    if not radius_encounters[player_area] then return end
-    for index, fight_id in ipairs(radius_encounters[player_area]) do
-        local object = Net.get_object_by_id(player_area, fight_id)
-        local radius = tonumber(object.custom_properties["Radius"])
-        if object == nil or object.z ~= player_last_position[player_id].z then
-            return
-        end
-
-        local distance = math.sqrt((player_last_position[player_id].x - object.x) ^ 2 + (player_last_position[player_id].y - object.y) ^ 2)
-        if distance > radius then
-            return
-        end
-
-        local is_hidden_already = ezmemory.object_is_hidden_from_player(player_id,player_area,object.id)
-        if is_hidden_already then
-            return
-        end
-
-        --start a basic encounter TODO allow specification of encounter_info
-        local encounter_name = object.custom_properties["Name"]
-        if encounter_name then
-            ezencounters.begin_encounter_by_name(player_id,encounter_name,object)
-        else
-            local encounter_info = {path=object.custom_properties["Path"]}
-            ezencounters.begin_encounter(player_id,{path=object.custom_properties["Path"]},object)
-        end
-        
-        ezmemory.hide_object_from_player_till_disconnect(player_id,player_area,object.id)
-    end
 end
 
 ezencounters.pick_encounter_from_table = function (encounter_table)
@@ -212,17 +177,37 @@ ezencounters.handle_player_disconnect = function (player_id)
     ezencounters.clear_last_position(player_id)
 end
 
+local function on_radius_encounter_triggered(event)
+    local player_area = Net.get_player_area(event.player_id)
+    local is_hidden_already = ezmemory.object_is_hidden_from_player(event.player_id,player_area,event.object.id)
+    if is_hidden_already then
+        return
+    end
+
+    local encounter_name = object.custom_properties["Name"]
+    if encounter_name then
+        ezencounters.begin_encounter_by_name(event.player_id,encounter_name,event.object)
+    else
+        local encounter_info = {path=event.object.custom_properties["Path"]}
+        ezencounters.begin_encounter(event.player_id,encounter_info,event.object)
+    end
+    
+    ezmemory.hide_object_from_player_till_disconnect(event.player_id,player_area,event.object.id)
+end
+
 local areas = Net.list_areas()
 for i, area_id in next, areas do
-  --filter and store an array of all fight objects on server start
-  local objects = Net.list_objects(area_id)
-  radius_encounters[area_id] = {}
-  for j, object_id in next, objects do
-    local object = Net.get_object_by_id(area_id, object_id)
-    if object.type == radius_encounter_type then
-      table.insert(radius_encounters[area_id], object_id)
+    --filter and store an array of all radius encounters
+    local objects = Net.list_objects(area_id)
+    for j, object_id in next, objects do
+        local object = Net.get_object_by_id(area_id, object_id)
+        if object.type == radius_encounter_type then
+            local emitter = eztriggers.add_radius_trigger(area_id,object_id)
+            emitter.on('entered_radius',function(event)
+                return on_radius_encounter_triggered(event)
+            end)
+        end
     end
-  end
 end
 
 return ezencounters

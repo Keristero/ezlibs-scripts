@@ -51,52 +51,6 @@ function ezwarps.on_tick(delta_time)
     check_radius_warps()
 end
 
-function check_radius_warps()
-    local areas = Net.list_areas()
-    for i, area_id in next, areas do
-        local players = Net.list_players(area_id)
-        for i, player_id in next, players do
-            for index, radius_warp in ipairs(radius_warps) do
-                if radius_warp.area_id ~= area_id then
-                    goto continue
-                end
-                local player_pos = Net.get_player_position(player_id)
-                if math.floor(player_pos.z) ~= math.floor(radius_warp.object.z) then
-                    goto continue
-                end
-                local entered_range = false
-                local in_range = false
-                if radius_warp.in_range[player_id] == true then
-                    in_range = true
-                end
-                local distance = math.sqrt((player_pos.x - radius_warp.object.x) ^ 2 + (player_pos.y - radius_warp.object.y) ^ 2)
-
-                if distance < radius_warp.activation_radius then
-                    radius_warp.in_range[player_id] = true
-                    if not in_range then
-                        log('player entered warp range')
-                        entered_range = true
-                    end
-                else
-                    radius_warp.in_range[player_id] = false
-                end
-
-                if entered_range == true then
-                    if not players_in_animations[player_id] then
-                        log('using radius warp')
-                        use_warp(player_id,radius_warp.object,radius_warp)
-                    else
-                        log('player arrived in radius warp range')
-                        players_in_animations[player_id] = nil
-                        Net.unlock_player_input(player_id)
-                    end
-                end
-                ::continue::
-            end
-        end
-    end
-end
-
 function add_landing(area_id, incoming_data, x, y, z, direction, warp_in, arrival_animation)
     local new_landing = {
         area_id = area_id,
@@ -129,8 +83,8 @@ function doAnimationForWarp(player_id,animation_name,is_leave_animation,warp_obj
             await(animation_properties.animate(player_id,warp_object))
             log('animation complete '..animation_name)
             player_animations[player_id] = nil
-            Net.unlock_player_input(player_id)
         end
+        Net.unlock_player_input(player_id)
     end)
 end
 
@@ -153,6 +107,17 @@ function add_radius_warp(object, object_id, area_id, area_name)
         in_range={}
     }
     radius_warps[#radius_warps+1] = new_radius_warp
+
+    local radius_warp_emitter = eztriggers.add_radius_trigger(player_id,object)
+    radius_warp_emitter.on("entered_radius",function(event)
+        if not players_in_animations[player_id] then
+            log('using radius warp')
+            use_warp(player_id,radius_warp.object,radius_warp)
+        else
+            log('player arrived in radius warp range')
+            players_in_animations[player_id] = nil
+        end
+    end)
     log('added radius warp '..object_id)
 end
 
