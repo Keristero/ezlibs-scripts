@@ -162,6 +162,47 @@ local dialogue_types = {
                 return next_id
             end)
         end
+    },
+    password={
+        name = "password",
+        action = function(npc, player_id, dialogue, relay_object)
+            return async(function ()
+                local correct_password = dialogue.custom_properties["Password"]
+                local user_input = await(Async.prompt_player(player_id))
+                if user_input == correct_password then
+                    return dialogue.custom_properties["Next 1"]
+                else
+                    return dialogue.custom_properties["Next 2"]
+                end
+            end)
+        end
+    },
+    item={
+        name = "item",
+        action = function(npc, player_id, dialogue, relay_object)
+            return async(function ()
+                local item_name = dialogue.custom_properties["Name"]
+                local description = dialogue.custom_properties["Description"] or "???"
+                local is_key = dialogue.custom_properties["Is Key"] == "true"
+                local amount = tonumber(dialogue.custom_properties["Amount"]) or 1
+                local notify_player = dialogue.custom_properties["Dont Notify"] ~= "false"
+                if not item_name then
+                    return
+                end
+                ezmemory.create_or_update_item(item_name,description,is_key)
+                ezmemory.give_player_item(player_id,item_name,amount)
+                local message = ""
+                if notify_player then
+                    if amount == 1 then
+                        message = "Got "..item_name.."!"
+                    elseif amount > 1 then
+                        message = "Got "..amount.." "..item_name.."!"
+                    end
+                    Net.play_sound_for_player(player_id, '/server/assets/ezlibs-assets/sfx/item_get.ogg')
+                    await(Async.message_player(player_id, message))
+                end
+            end)
+        end
     }
 }
 

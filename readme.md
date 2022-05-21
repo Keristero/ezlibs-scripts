@@ -135,7 +135,17 @@ Custom properties:
             - `Name` string (*default is ???*)
             - `Price` int (*default is 9999999*)
         - after the shop is closed the first `Next #` dialogue will be triggered
-
+    - `item`
+        - gives the player an item
+        - specify the item with these properties:
+            - `Description` string (*default is ???*)
+            - `Is Key` bool (*default is false*)
+            - `Name` string (*default is ???*)
+            - `Price` int (*default is 9999999*)
+        - you can specify the amount with `Amount`
+        - by default the a textbox will say "Got x Item", you can disable this with `Dont Notify` bool (*default is false)
+    - `password`
+        - prompts the user for an input, if it matches the `Password` custom property, go to `Next 1` dialouge, otherwise go to `Next 2` dialogue
     - `none`
         - usually used with `Event Name`, no dialogue, but the event will still be triggered
         
