@@ -45,7 +45,7 @@ function create_arrow_animation(is_arriving,direction_str)
         },
         duration = animation_length,--delay in seconds from start of animation till player warps out
         animate=function(player_id)
-            return async(function
+            return async(function()
                 local player_pos = Net.get_player_position(player_id)
                 local area_id = Net.get_player_area(player_id)
                 local weather = ezweather.get_area_weather(area_id)

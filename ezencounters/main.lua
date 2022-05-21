@@ -203,7 +203,7 @@ for i, area_id in next, areas do
         local object = Net.get_object_by_id(area_id, object_id)
         if object.type == radius_encounter_type then
             local emitter = eztriggers.add_radius_trigger(area_id,object_id)
-            emitter.on('entered_radius',function(event)
+            emitter:on('entered_radius',function(event)
                 return on_radius_encounter_triggered(event)
             end)
         end

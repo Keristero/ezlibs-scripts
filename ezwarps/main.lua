@@ -81,11 +81,11 @@ end
 
 function add_interact_warp(object, object_id, area_id, area_name)
     log('adding interact warp... '..object_id)
-    local interact_warp_emitter = eztriggers.add_interact_warp(player_id,object)
-    interact_warp_emitter.on("interaction",function(event)
-        if not players_in_animations[player_id] then
+    local interact_warp_emitter = eztriggers.add_interact_trigger(area_id,object)
+    interact_warp_emitter:on("interaction",function(event)
+        if not players_in_animations[event.player_id] then
             log('using interact warp')
-            use_warp(player_id,event.object)
+            use_warp(event.player_id,object)
         end
     end)
     log('added interact warp '..object_id)
@@ -94,14 +94,15 @@ end
 -- Adds the given radius warp to the list of detected radius warps
 function add_radius_warp(object, object_id, area_id, area_name)
     log('adding radius warp... '..object_id)
-    local radius_warp_emitter = eztriggers.add_radius_trigger(player_id,object)
-    radius_warp_emitter.on("entered_radius",function(event)
-        if not players_in_animations[player_id] then
+    local radius = object.custom_properties["Activation Radius"]
+    local radius_warp_emitter = eztriggers.add_radius_trigger(area_id,object,radius)
+    radius_warp_emitter:on("entered_radius",function(event)
+        if not players_in_animations[event.player_id] then
             log('using radius warp')
-            use_warp(player_id,event.object)
+            use_warp(event.player_id,object)
         else
             log('player arrived in radius warp range')
-            players_in_animations[player_id] = nil
+            players_in_animations[event.player_id] = nil
         end
     end)
     log('added radius warp '..object_id)
@@ -199,7 +200,7 @@ end
 --area_id=area_id
 
 function use_warp(player_id,warp_object,warp_meta)
-    return async(function
+    return async(function()
         local warp_properties = warp_object.custom_properties
         local is_valid_warp = false
         local is_remote_warp = false
@@ -209,10 +210,10 @@ function use_warp(player_id,warp_object,warp_meta)
             is_valid_warp = true
         end
 
-        local target_object = object.custom_properties["Target Object"]
-        local target_area = object.custom_properties["Target Area"]
+        local target_object_id = warp_object.custom_properties["Target Object"]
+        local target_area = warp_object.custom_properties["Target Area"]
 
-        if target_object ~= nil and target_area ~= nil then
+        if target_object_id ~= nil and target_area ~= nil then
             is_remote_warp = false
             is_valid_warp = true
         end
@@ -238,7 +239,8 @@ function use_warp(player_id,warp_object,warp_meta)
             local direction = "Down"
             local arrival_animation_name = nil
             local dont_teleport = warp_object.custom_properties["Dont Teleport"]
-            if target_object and not dont_teleport then
+            if target_object_id and not dont_teleport then
+                local target_object = Net.get_object_by_id(target_area,target_object_id)
                 if target_object.custom_properties["Direction"] then
                     direction = target_object.custom_properties["Direction"]
                 end
