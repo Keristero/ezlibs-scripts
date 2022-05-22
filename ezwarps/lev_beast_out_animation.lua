@@ -103,9 +103,9 @@ local lev_beast_out_animation = {
             Net.animate_player_properties(player_id, player_keyframes)
             Net.animate_bot_properties(lev_beast_id, beast_keyframes)
             Net.message_player(player_id, "AHHH! The Lev Beast is here!?", player_mugshot.texture_path, player_mugshot.animation_path)
-            await(Async.sleep(seconds_intro+seconds_arriving+seconds_here))
+            await(Async.sleep(seconds_arriving))
             Net.play_sound(area_id, '/server/assets/ezlibs-assets/ezwarps/lev-bus-leave.ogg')
-            await(Async.sleep(seconds_intro+seconds_arriving+seconds_here+seconds_leaving))
+            await(Async.sleep(seconds_here+seconds_leaving))
             Net.remove_bot(lev_beast_id)
         end)
     end

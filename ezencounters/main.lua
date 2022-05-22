@@ -178,13 +178,13 @@ ezencounters.handle_player_disconnect = function (player_id)
 end
 
 local function on_radius_encounter_triggered(event)
+    print("RADIUS ENCOUNTER WOOOO")
     local player_area = Net.get_player_area(event.player_id)
     local is_hidden_already = ezmemory.object_is_hidden_from_player(event.player_id,player_area,event.object.id)
     if is_hidden_already then
         return
     end
-
-    local encounter_name = object.custom_properties["Name"]
+    local encounter_name = event.object.custom_properties["Name"]
     if encounter_name then
         ezencounters.begin_encounter_by_name(event.player_id,encounter_name,event.object)
     else
@@ -201,8 +201,9 @@ for i, area_id in next, areas do
     local objects = Net.list_objects(area_id)
     for j, object_id in next, objects do
         local object = Net.get_object_by_id(area_id, object_id)
-        if object.type == radius_encounter_type then
-            local emitter = eztriggers.add_radius_trigger(area_id,object_id)
+        if object.type == "Radius Encounter" then
+            local radius = tonumber(object.custom_properties["Radius"] or 1)
+            local emitter = eztriggers.add_radius_trigger(area_id,object,radius)
             emitter:on('entered_radius',function(event)
                 return on_radius_encounter_triggered(event)
             end)

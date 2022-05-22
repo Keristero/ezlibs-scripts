@@ -5,7 +5,6 @@ local lev_beast_in_animation = {
         y=0,
         z=0
     },
-    duration=8,
     animate=function(player_id)
         return async(function()
             local player_pos = Net.get_player_position(player_id)
@@ -104,11 +103,11 @@ local lev_beast_in_animation = {
 
             Net.play_sound(area_id, 'resources/sfx/falzar.ogg')
             Net.shake_player_camera(player_id, 3, 1)
-            await(Async.sleep(seconds_arriving+seconds_here))
+            await(Async.sleep(seconds_here))
             
             Net.play_sound(area_id, '/server/assets/ezlibs-assets/ezwarps/lev-bus-leave.ogg')
             Net.unlock_player_input(player_id)
-            await(Async.sleep(seconds_arriving+seconds_here+seconds_leaving))
+            await(Async.sleep(seconds_leaving))
             
             Net.remove_bot(lev_beast_id)
         end)

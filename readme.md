@@ -143,7 +143,7 @@ Custom properties:
             - `Name` string (*default is ???*)
             - `Price` int (*default is 9999999*)
         - you can specify the amount with `Amount`
-        - by default the a textbox will say "Got x Item", you can disable this with `Dont Notify` bool (*default is false)
+        - by default a textbox will be sent saying "Got x Item", you can disable this with `Dont Notify` bool (*default is false)
     - `password`
         - prompts the user for an input, if it matches the `Password` custom property, go to `Next 1` dialouge, otherwise go to `Next 2` dialogue
     - `none`

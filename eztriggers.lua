@@ -43,7 +43,7 @@ function eztriggers.handle_object_interaction(player_id,object_id,button)
     end
     for trigger_id, trigger_info in pairs(eztriggers.interact_triggers[player_area]) do
         if object_id == trigger_id then
-            trigger_info.emitter:emit("interaction",{player_id=player_id,object_id=trigger_id,button=button})
+            trigger_info.emitter:emit("interaction",{player_id=player_id,object=trigger_info.object,button=button})
         end
     end
 end
@@ -61,12 +61,12 @@ function eztriggers.handle_player_move(player_id, x, y, z)
 
         if distance < radius then
             if not trigger_info.overlapping_players[player_id] then
-                trigger_info.emitter:emit("entered_radius",{player_id=player_id,object_id=trigger_id})
+                trigger_info.emitter:emit("entered_radius",{player_id=player_id,object=trigger_info.object})
                 trigger_info.overlapping_players[player_id] = true
             end
         else
             if trigger_info.overlapping_players[player_id] then
-                trigger_info.emitter:emit("departed_radius",{player_id=player_id,object_id=trigger_id})
+                trigger_info.emitter:emit("departed_radius",{player_id=player_id,object=trigger_info.object})
                 trigger_info.overlapping_players[player_id] = nil
             end
         end

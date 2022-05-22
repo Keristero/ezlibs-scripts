@@ -6,7 +6,6 @@ function create_jack_in_out_animation(is_arriving)
             y=0,
             z=0
         },
-        duration=1.0,
         animate=function(player_id)
             return async(function()
                 local player_pos = Net.get_player_position(player_id)

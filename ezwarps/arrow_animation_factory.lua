@@ -14,8 +14,6 @@ local Direction = {
     ["Down Right"] = "Up Left",
   }
 
-local animation_length = 1
-
 function create_arrow_animation(is_arriving,direction_str)
     local x_distance = 0
     local y_distance = 0
@@ -43,7 +41,6 @@ function create_arrow_animation(is_arriving,direction_str)
             y=y_start_offset,
             z=0
         },
-        duration = animation_length,--delay in seconds from start of animation till player warps out
         animate=function(player_id)
             return async(function()
                 local player_pos = Net.get_player_position(player_id)
@@ -65,11 +62,11 @@ function create_arrow_animation(is_arriving,direction_str)
                         duration=0
                     }
                     Net.fade_player_camera(player_id, weather.camera_tint, 0.5)
-                    Net.move_player_camera(player_id, player_pos.x+x_distance, player_pos.y+y_distance, player_pos.z, animation_length)
+                    Net.move_player_camera(player_id, player_pos.x+x_distance, player_pos.y+y_distance, player_pos.z, 1)
                     Net.unlock_player_camera(player_id)
                 else
                     Net.fade_player_camera(player_id, {r=0, g=0, b=0, a=255}, 0.5)
-                    Net.slide_player_camera(player_id, player_pos.x+x_distance, player_pos.y+y_distance, player_pos.z, animation_length)
+                    Net.slide_player_camera(player_id, player_pos.x+x_distance, player_pos.y+y_distance, player_pos.z, 1)
                     Net.unlock_player_camera(player_id)
                 end
                 player_keyframes[#player_keyframes+1] = {
@@ -83,10 +80,10 @@ function create_arrow_animation(is_arriving,direction_str)
                         ease="Linear",
                         value=player_pos.y+y_distance
                     }},
-                    duration=animation_length
+                    duration=1
                 }
                 Net.animate_player_properties(player_id,player_keyframes)
-                await(Async.sleep(animation_length))
+                await(Async.sleep(1))
             end)
         end
     }

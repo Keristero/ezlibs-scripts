@@ -5,7 +5,6 @@ local fall_off_2 = {
         y=0,
         z=0
     },
-    duration=1,
     animate=function(player_id,warp_object)
         return async(function()
             local player_pos = Net.get_player_position(player_id)

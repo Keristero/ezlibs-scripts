@@ -5,7 +5,6 @@ local fall_in_animation = {
         y=0,
         z=40
     },
-    duration=1,
     animate=function(player_id)
         return async(function()
             local player_pos = Net.get_player_position(player_id)
@@ -28,7 +27,7 @@ local fall_in_animation = {
                 duration=fall_duration
             }
             Net.animate_player_properties(player_id, keyframes)
-            await(Async.sleep(1))
+            await(Async.sleep(fall_duration))
             local sound_path = '/server/assets/ezlibs-assets/ezwarps/earthquake.ogg'
             Net.play_sound(area_id, sound_path)
             Net.shake_player_camera(player_id, 3, 2)
