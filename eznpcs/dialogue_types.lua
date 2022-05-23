@@ -185,7 +185,7 @@ local dialogue_types = {
                 local description = dialogue.custom_properties["Description"] or "???"
                 local is_key = dialogue.custom_properties["Is Key"] == "true"
                 local amount = tonumber(dialogue.custom_properties["Amount"]) or 1
-                local notify_player = dialogue.custom_properties["Dont Notify"] ~= "false"
+                local notify_player = not dialogue.custom_properties["Dont Notify"] == "true"
                 if not item_name then
                     return
                 end
