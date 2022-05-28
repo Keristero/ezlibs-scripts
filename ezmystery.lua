@@ -60,25 +60,34 @@ function try_collect_datum(player_id, area_id, object)
 end
 
 function validate_datum(object)
-    if object.custom_properties["Type"] == "keyitem" then
+    local type = object.custom_properties["Type"]
+    if type == "random" then
+        local random_options = helpers.extract_numbered_properties(object, "Next ")
+        if #random_options == 0 then
+            warn('[ezmystery] ' .. object.id .. ' is type=random, but has no Next #')
+            return false
+        end
+    elseif type == "keyitem" then
         local name = object.custom_properties["Name"]
         local description = object.custom_properties["Description"]
         if not name or not description then
             warn('[ezmystery] ' .. object.id .. ' has either no name or description')
             return false
         end
-    elseif object.custom_properties["Type"] == "item" then
+    elseif type == "item" then
         local name = object.custom_properties["Name"]
         if not name then
             warn('[ezmystery] ' .. object.id .. ' has no name')
             return false
         end
-    elseif object.custom_properties["Type"] == "money" then
+    elseif type == "money" then
         local amount = object.custom_properties["Amount"]
         if not amount then
             warn('[ezmystery] ' .. object.id .. ' has no amount')
             return false
         end
+    else
+        warn('[ezmystery] invalid type for mystery data ' .. type)
     end
     return true
 end
@@ -119,6 +128,7 @@ function collect_datum(player_id, object, datum_id_override)
             Net.message_player(player_id, "Got " .. amount .. "$!")
             Net.play_sound_for_player(player_id, sfx.item_get)
         end
+
 
         if object.custom_properties["Once"] == "true" then
             --If this mystery data should only be available once (not respawning)
