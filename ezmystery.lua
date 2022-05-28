@@ -87,7 +87,7 @@ function validate_datum(object)
             return false
         end
     else
-        warn('[ezmystery] invalid type for mystery data ' .. type)
+        warn('[ezmystery] invalid type for mystery data '.. object.id .. " type= ".. tostring(type))
     end
     return true
 end
