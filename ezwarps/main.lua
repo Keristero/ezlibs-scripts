@@ -2,6 +2,7 @@
 local json = require('scripts/ezlibs-scripts/json')
 local create_arrow_animation = require('scripts/ezlibs-scripts/ezwarps/arrow_animation_factory')
 local create_jack_in_out_animation = require('scripts/ezlibs-scripts/ezwarps/log_in_animation')
+local eztriggers = require('scripts/ezlibs-scripts/eztriggers')
 
 local ezwarps = {}
 
