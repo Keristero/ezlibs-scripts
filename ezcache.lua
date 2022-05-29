@@ -1,4 +1,4 @@
-ezcache = {}
+local ezcache = {}
 ezcache.cache = {}
 ezcache.types = {"NPC","Waypoint","Dialogue","Shop Item","Mystery Option"}
 

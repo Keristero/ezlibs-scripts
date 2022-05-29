@@ -1,5 +1,6 @@
 local ezmystery = {}
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
+local ezcache = require('scripts/ezlibs-scripts/ezcache')
 local helpers = require('scripts/ezlibs-scripts/helpers')
 local math = require('math')
 

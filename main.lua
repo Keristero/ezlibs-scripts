@@ -1,15 +1,13 @@
-helpers = require('scripts/ezlibs-scripts/helpers')
-eztriggers = require('scripts/ezlibs-scripts/eztriggers')
-ezcache = require('scripts/ezlibs-scripts/ezcache')
-ezencounters = require('scripts/ezlibs-scripts/ezencounters/main')
-eznpcs = require('scripts/ezlibs-scripts/eznpcs/eznpcs')
-ezmemory = require('scripts/ezlibs-scripts/ezmemory')
-ezmystery = require('scripts/ezlibs-scripts/ezmystery')
-ezweather = require('scripts/ezlibs-scripts/ezweather')
-ezwarps = require('scripts/ezlibs-scripts/ezwarps/main')
-ezfarms = require('scripts/ezlibs-scripts/ezfarms')
-
---local plugins = {ezweather,eznpcs,ezmemory,ezmystery,ezfarms,ezwarps,ezencounters}
+local helpers = require('scripts/ezlibs-scripts/helpers')
+local eztriggers = require('scripts/ezlibs-scripts/eztriggers')
+local ezcache = require('scripts/ezlibs-scripts/ezcache')
+local ezencounters = require('scripts/ezlibs-scripts/ezencounters/main')
+local eznpcs = require('scripts/ezlibs-scripts/eznpcs/eznpcs')
+local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
+local ezmystery = require('scripts/ezlibs-scripts/ezmystery')
+local ezweather = require('scripts/ezlibs-scripts/ezweather')
+local ezwarps = require('scripts/ezlibs-scripts/ezwarps/main')
+local ezfarms = require('scripts/ezlibs-scripts/ezfarms')
 
 local plugins = { ezweather, eznpcs, ezmemory, ezmystery, ezwarps, ezencounters, ezfarms ,eztriggers}
 
