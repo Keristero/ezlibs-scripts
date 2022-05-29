@@ -165,7 +165,6 @@ Custom properties:
 ### Waypoints
 any object can be a waypoint, you can use these custom properties to define what the NPC will do once it reaches said object.
 Custom properties:
-- `Dialogue Type` string
 - `Waypoint Type` string
     - `first`
         - after reaching this waypoint, the NPC will head to the waypoint referenced by the first `Next Waypoint #` custom property, usually `Next Waypoint 1`

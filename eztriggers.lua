@@ -56,18 +56,20 @@ function eztriggers.handle_player_move(player_id, x, y, z)
         return 
     end
     for trigger_id, trigger_info in pairs(eztriggers.radius_triggers[player_area]) do
-        local radius = trigger_info.radius
-        local distance = math.sqrt((x - trigger_info.object.x) ^ 2 + (y - trigger_info.object.y) ^ 2)
+        if trigger_info.object.z == z then
+            local radius = trigger_info.radius
+            local distance = math.sqrt((x - trigger_info.object.x) ^ 2 + (y - trigger_info.object.y) ^ 2)
 
-        if distance < radius then
-            if not trigger_info.overlapping_players[player_id] then
-                trigger_info.emitter:emit("entered_radius",{player_id=player_id,object=trigger_info.object})
-                trigger_info.overlapping_players[player_id] = true
-            end
-        else
-            if trigger_info.overlapping_players[player_id] then
-                trigger_info.emitter:emit("departed_radius",{player_id=player_id,object=trigger_info.object})
-                trigger_info.overlapping_players[player_id] = nil
+            if distance < radius then
+                if not trigger_info.overlapping_players[player_id] then
+                    trigger_info.emitter:emit("entered_radius",{player_id=player_id,object=trigger_info.object})
+                    trigger_info.overlapping_players[player_id] = true
+                end
+            else
+                if trigger_info.overlapping_players[player_id] then
+                    trigger_info.emitter:emit("departed_radius",{player_id=player_id,object=trigger_info.object})
+                    trigger_info.overlapping_players[player_id] = nil
+                end
             end
         end
     end

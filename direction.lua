@@ -24,6 +24,35 @@ function Direction.reverse(direction)
   return reverse_table[direction]
 end
 
+function Direction.to_vector(direction_str)
+  local x_distance = 0
+  local y_distance = 0
+  local x_start_offset = 0
+  local y_start_offset = 0
+  if direction_str == Direction.LEFT then
+    x_distance = -0.5
+    y_distance = 0.5
+  elseif direction_str == Direction.RIGHT then
+    x_distance = 0.5
+    y_distance = -0.5
+  elseif direction_str == Direction.UP then
+    x_distance = -0.5
+    y_distance = -0.5
+  elseif direction_str == Direction.DOWN then
+    x_distance = 0.5
+    y_distance = 0.5
+  elseif direction_str == Direction.UP_LEFT then
+      x_distance = -1
+  elseif direction_str == Direction.DOWN_RIGHT then
+      x_distance = 1
+  elseif direction_str == Direction.UP_RIGHT then
+      y_distance = -1
+  elseif direction_str == Direction.DOWN_LEFT then
+      y_distance = 1
+  end
+  return {x=x_distance,y=y_distance}
+end
+
 function Direction.from_points(point_a, point_b)
   local a_z_offset = point_a.z / 2
   local a_x = point_a.x - a_z_offset
