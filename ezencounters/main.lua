@@ -1,6 +1,7 @@
 local ezwarps = require('scripts/ezlibs-scripts/ezwarps/main')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 local helpers = require('scripts/ezlibs-scripts/helpers')
+local eztriggers = require('scripts/ezlibs-scripts/eztriggers')
 
 local ezencounters = {}
 local players_in_encounters = {}

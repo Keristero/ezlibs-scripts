@@ -143,7 +143,7 @@ Custom properties:
             - item objects can have these properties [`Items`](#Items)
         
     - `password`
-        - prompts the user for an input, if it matches the `Password` custom property, go to `Next 1` dialouge, otherwise go to `Next 2` dialogue
+        - prompts the user for an input, if it matches the `Text 1` custom property, go to `Next 1` dialouge, otherwise go to `Next 2` dialogue
     - `none`
         - usually used with `Event Name`, no dialogue, but the event will still be triggered
         

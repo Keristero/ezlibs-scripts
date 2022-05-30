@@ -1,8 +1,6 @@
 
 local helpers = require('scripts/ezlibs-scripts/helpers')
-local eznpcs = require('scripts/ezlibs-scripts/eznpcs/eznpcs')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
-
 
 local function read_item_information(area_id, item_object_id)
     local item_info_object = Net.get_object_by_id(area_id,item_object_id)
@@ -202,7 +200,7 @@ local dialogue_types = {
         name = "password",
         action = function(npc, player_id, dialogue, relay_object)
             return async(function ()
-                local correct_password = dialogue.custom_properties["Password"]
+                local correct_password = dialogue.custom_properties["Text 1"]
                 local user_input = await(Async.prompt_player(player_id))
                 if user_input == correct_password then
                     return dialogue.custom_properties["Next 1"]
@@ -242,6 +240,7 @@ local dialogue_types = {
                         end
                     end
                 end
+                return dialogue.custom_properties["Next 1"]
             end)
         end
     }
