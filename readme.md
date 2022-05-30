@@ -129,21 +129,19 @@ Custom properties:
     - `shop`
         - will open a shop where the player can buy items
         - add items to the shop with `Item #`(object) custom properties
-        - item objects should have these properties:
-            - `Description` string (*default is ???*)
-            - `Is Key` bool (*default is false*)
-            - `Name` string (*default is ???*)
-            - `Price` int (*default is 9999999*)
+            - item objects can have these properties [`Items`](#Items)
         - after the shop is closed the first `Next #` dialogue will be triggered
     - `item`
         - gives the player an item
-        - specify the item with these properties:
-            - `Description` string (*default is ???*)
-            - `Is Key` bool (*default is false*)
-            - `Name` string (*default is ???*)
-            - `Price` int (*default is 9999999*)
-        - you can specify the amount with `Amount`
+        - specify items to be gifted `Item #`(object) custom properties
+            - item objects can have these properties [`Items`](#Items)
         - by default a textbox will be sent saying "Got x Item", you can disable this with `Dont Notify` bool (*default is false)
+    - `itemcheck`
+        - checks if the player has the required items, `Next 1` will be triggered if requirements are met, otherwise `Next 2` will be triggered
+        - if the `Take Item` custom property is set to `true`, all the required items will be taken from the player
+        - specify item requirements with `Item #`(object) custom properties
+            - item objects can have these properties [`Items`](#Items)
+        
     - `password`
         - prompts the user for an input, if it matches the `Password` custom property, go to `Next 1` dialouge, otherwise go to `Next 2` dialogue
     - `none`
@@ -161,6 +159,14 @@ Custom properties:
     - Override the speaking bot's mugshot with another one for this dialogue node.
     - for example, even though `prog` is speaking, we can make it display Bass' mugshot by setting `Mugshot` to `bass`
     - There is a special value `player` which will get the mugshot of the player talking to the NPC, useful for back and forth conversations
+
+### Items
+- `Name` string
+    - you can set the Name to "money" for money instead of items
+- `Description` string (*default is ???*)
+- `Is Key` bool (*default is false*)
+- `Price` int (*default is 9999999*), only used for shops
+- `Amount` int (*default is 1*), not used by shops
 
 ### Waypoints
 any object can be a waypoint, you can use these custom properties to define what the NPC will do once it reaches said object.
