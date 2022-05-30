@@ -9,17 +9,15 @@ local function read_item_information(area_id, item_object_id)
     item.name = item_props["Name"]
     item.amount = tonumber(item_props["Amount"] or 1)
     item.description = item_props["Description"] or "???"
-    item.is_key = item_props["Is Key"] == "true"
+    item.type = item_props["Type"] or "item"
     item.price = tonumber(item_props["Price"] or 999999)
-    if not item.name then
+    if item.type ~= "money" and not item.name then
         warn("[eznpcs] item "..item_object_id.." needs a 'Name'")
         return false
     end
-    if item.is_key then
-        if item.description == "???" then
-            warn("[eznpcs] key item "..item_object_id.."("..item.name..") should have a 'Description'")
-            return false
-        end
+    if item.type == "keyitem" and item.description == "???" then
+        warn("[eznpcs] key item "..item_object_id.."("..item.name..") should have a 'Description'")
+        return false
     end
     return item
 end
@@ -94,7 +92,7 @@ local dialogue_types = {
                     local item_info = read_item_information(area_id,item_object_id)
                     local has_count = 0
                     if item_info then
-                        if item_info.name == "money" then
+                        if item_info.type == "money" then
                             has_count = Net.get_player_money(player_id)
                         else
                             has_count = ezmemory.count_player_item(player_id, item_info.name)
@@ -109,7 +107,7 @@ local dialogue_types = {
                     for index, item_object_id in ipairs(required_items) do
                         local item_info = read_item_information(area_id,item_object_id)
                         if item_info and take_item then
-                            if item_info.name == "money" then
+                            if item_info.type == "money" then
                                 ezmemory.spend_player_money(player_id,item_info.amount)
                             else
                                 ezmemory.remove_player_item(player_id,item_info.name, item_info.amount)
@@ -177,14 +175,13 @@ local dialogue_types = {
 
                 --create list of items for sale
                 for i, item_object_id in ipairs(shop_item_object_ids) do
-                    local item_info_object = Net.get_object_by_id(area_id,item_object_id)
-                    local item_info = item_info_object.custom_properties
+                    local item_info = read_item_information(area_id,item_object_id)
                     if item_info then
                         local shop_item = {
-                            name=item_info["Name"] or "???",
-                            price=tonumber(item_info["Price"] or 9999999),
-                            description=item_info["Description"] or "???",
-                            is_key=item_info["Is Key"] == 'true'
+                            name=item_info.name,
+                            price=item_info.price,
+                            description=item_info.description or "???",
+                            is_key=item_info.type == 'keyitem'
                         }
                         table.insert(shop_items,shop_item)
                     end
@@ -219,7 +216,7 @@ local dialogue_types = {
                 for index, item_id in ipairs(gift_item_ids) do
                     local item_info = read_item_information(area_id,item_id)
                     if item_info then
-                        if item_info.name == "money" then
+                        if item_info.type == "money" then
                             item_info.name = "$"
                             --spending negative money gives it instead.
                             ezmemory.spend_player_money(player_id, -item_info.amount)
@@ -227,7 +224,7 @@ local dialogue_types = {
                             ezmemory.create_or_update_item(item_info.name,item_info.description,item_info.is_key)
                             ezmemory.give_player_item(player_id,item_info.name,item_info.amount)
                         end
-                        local notify_player = not dialogue.custom_properties["Dont Notify"] == "true"
+                        local notify_player = dialogue.custom_properties["Dont Notify"] ~= "true"
                         local message = ""
                         if notify_player then
                             if item_info.amount == 1 then

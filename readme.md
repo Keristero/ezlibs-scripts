@@ -162,9 +162,11 @@ Custom properties:
 
 ### Items
 - `Name` string
-    - you can set the Name to "money" for money instead of items
 - `Description` string (*default is ???*)
-- `Is Key` bool (*default is false*)
+- `Type` string
+    - `item` (default)
+    - `money`
+    - `keyitem`
 - `Price` int (*default is 9999999*), only used for shops
 - `Amount` int (*default is 1*), not used by shops
 
