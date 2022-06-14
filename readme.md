@@ -372,6 +372,23 @@ encounter options:
         - `Spikey` (1,2,3) ~Author DawnOwl#5358
         - `Canodumb` (1,2,3) ~Author Konstinople#7692
         - `Canosmart` (1) ~Author DawnOwl#5358
+        - `Volgear` (1,2,3,4) ~Author LouisE#9864
+        - `KillerEye` (1,2,6,7) ~Author LouisE#9864
+        - `DemonEye` (1) ~Author LouisE#9864
+        - `JokerEye` (1) ~Author LouisE#9864
+        - `HauntedCandle` (1,2,3,4,6,7) ~Author LouisE#9864
+        - `Fishy` (1,2,3,4) ~Author LouisE#9864
+        - `BombCorn` (1,4,6,7) ~Author LouisE#9864
+        - `JokerEye` (1) ~Author LouisE#9864
+        - `MegaCorn` (1) ~Author LouisE#9864
+        - `GigaCorn` (1) ~Author LouisE#9864
+        - `Bladia` (1) ~Author DawnOwl#5358
+        - `Metrid` (1,2,3,4) ~Author DawnOwl#5358
+        - `Basher` (1) ~Author DawnOwl#5358
+        - `FighterPlane` (1,2,3,4) ~Author DawnOwl#5358
+        - `Catack` (1,2,3,4) ~Author DawnOwl#5358
+        - `Ratty` (1,2,3,4) ~Author DawnOwl#5358
+
 - positions (grid)
     - where to spawn each enemy, 0 = no enemy, to spawn an enemy use the index of the enemy you listed in the enemies table you provided (1 = enemy at index 1 in your enemies table)
 - tiles (grid)
