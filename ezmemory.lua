@@ -365,6 +365,22 @@ function ezmemory.hide_object_from_player_till_disconnect(player_id,area_id,obje
     end
 end
 
+function ezmemory.reveal_object_hidden_till_disconnect_for_player(player_id,area_id,object_id)
+    object_id = tostring(object_id)
+    local player_area = Net.get_player_area(player_id)
+    if not objects_hidden_till_disconnect_for_player[player_id] then
+        objects_hidden_till_disconnect_for_player[player_id] = {}
+    end
+    if not objects_hidden_till_disconnect_for_player[player_id][area_id] then
+        objects_hidden_till_disconnect_for_player[player_id][area_id] = {}
+    end
+    objects_hidden_till_disconnect_for_player[player_id][area_id][object_id] = false
+    if player_area == area_id then
+        --if the player is in the area of the object being hidden
+        Net.include_object_for_player(player_id, object_id)
+    end
+end
+
 function ezmemory.hide_object_from_player(player_id,area_id,object_id)
     object_id = tostring(object_id)
     local player_area = Net.get_player_area(player_id)

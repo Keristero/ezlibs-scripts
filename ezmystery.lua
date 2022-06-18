@@ -5,6 +5,16 @@ local helpers = require('scripts/ezlibs-scripts/helpers')
 local math = require('math')
 
 local object_cache = {}
+local hidden_mysteries_for_players = {}
+
+local function includes(table, value)
+    for _, v in ipairs(table) do
+      if value == v then
+        return true
+      end
+    end
+    return false
+end
 
 local sfx = {
     item_get = '/server/assets/ezlibs-assets/sfx/item_get.ogg',
@@ -30,10 +40,132 @@ Net:on("object_interaction", function(event)
     end
 end)
 
+function ezmystery.handle_player_disconnect(player_id)
+    local area_id = Net.get_player_area(player_id)
+    hidden_mysteries_for_players[player_id][area_id] = nil
+end
+
+function ezmystery.handle_player_transfer(player_id)
+    local area_id = Net.get_player_area(player_id)
+    local objects = Net.list_objects(area_id)
+    --New map properties. Default to making maximum smaller than minimum so that if this isn't setup, it won't be used.
+    local area_min_mystery_count = tonumber(Net.get_area_custom_property(area_id, "Mystery Data Minimum")) or 1
+    local area_max_mystery_count = tonumber(Net.get_area_custom_property(area_id, "Mystery Data Maximum")) or 0
+    --Mystery count used in the loop.
+    local mystery_count = 0
+    --As mentioned, don't do anything if the min is smaller than the max. Safety!
+    if area_min_mystery_count > area_max_mystery_count then return end
+    --If we've already processed this area for this player, don't process. We don't want to process the same area twice.
+    --That way, we don't rearrange existing mystery data, or data that's already been hidden.
+    if hidden_mysteries_for_players[player_id] and hidden_mysteries_for_players[player_id][area_id] then
+        for i = 1, #hidden_mysteries_for_players[player_id][area_id], 1 do
+            local mystery = hidden_mysteries_for_players[player_id][area_id][i]
+            if mystery ~= nil then
+                ezmemory.reveal_object_hidden_till_disconnect_for_player(player_id,area_id,mystery)
+            end
+        end
+        return
+    end
+    --Add the area to a dict of areas. Since we've started processing this area, we don't want to process it again.
+    hidden_mysteries_for_players[player_id] = {}
+    --Add the player's ID to that dict of areas.
+    hidden_mysteries_for_players[player_id][area_id] = {}
+    local datum_list = {}
+    local revealed_datum_list = {}
+    for i, object_id in next, objects do
+        local object = Net.get_object_by_id(area_id, object_id)
+        --Only allow it if it's a mystery datum, has the new property "Can Be Random" set to true as a bool, and "Once" is set to false as a bool
+        if object.type == "Mystery Datum" and object.custom_properties["Can Be Random"] == "true" and object.custom_properties["Once"] == "false" then
+            --Hide the datum. We want to hide all the mystery data, in fact.
+            ezmemory.hide_object_from_player_till_disconnect(player_id, area_id, object.id)
+            table.insert(datum_list, object.id)
+        end
+    end
+    while mystery_count < area_max_mystery_count do
+        for i = 1, #datum_list, 1 do
+            --Flip a coin.
+            if math.random(1, 20) > 10 and not includes(revealed_datum_list, datum_list[i]) then
+                --If it's heads, we unhide the datum.
+                --Increment the mystery data count if we successfully spawn a single datum.
+                mystery_count = mystery_count + 1
+                table.insert(revealed_datum_list, datum_list[i])
+                --If we're over the minimum count, break out on a chance. We don't ALWAYS want the max.
+                --Chance is ~40%.
+                if mystery_count >= area_min_mystery_count and math.random(1, 20) > 12 or mystery_count == area_max_mystery_count then
+                    --Set mystery data count to max area count so we don't risk running the code again.
+                    mystery_count = area_max_mystery_count
+                    break
+                end
+            end
+        end
+    end
+    hidden_mysteries_for_players[player_id][area_id] = revealed_datum_list
+    for i = 1, #revealed_datum_list, 1 do
+        ezmemory.reveal_object_hidden_till_disconnect_for_player(player_id,area_id,revealed_datum_list[i])
+    end
+end
+
 function ezmystery.handle_player_join(player_id)
     --Load sound effects for mystery data interaction
     for name, path in pairs(sfx) do
         Net.provide_asset_for_player(player_id, path)
+    end
+    local area_id = Net.get_player_area(player_id)
+    local objects = Net.list_objects(area_id)
+    --New map properties. Default to making maximum smaller than minimum so that if this isn't setup, it won't be used.
+    local area_min_mystery_count = tonumber(Net.get_area_custom_property(area_id, "Mystery Data Minimum")) or 1
+    local area_max_mystery_count = tonumber(Net.get_area_custom_property(area_id, "Mystery Data Maximum")) or 0
+    --Mystery count used in the loop.
+    local mystery_count = 0
+    --As mentioned, don't do anything if the min is smaller than the max. Safety!
+    if area_min_mystery_count > area_max_mystery_count then return end
+    --If we've already processed this area for this player, don't process. We don't want to process the same area twice.
+    --That way, we don't rearrange existing mystery data, or data that's already been hidden.
+    if hidden_mysteries_for_players[player_id] and hidden_mysteries_for_players[player_id][area_id] then
+        for i = 1, #hidden_mysteries_for_players[player_id][area_id], 1 do
+            local mystery = hidden_mysteries_for_players[player_id][area_id][i]
+            if mystery ~= nil then
+                ezmemory.reveal_object_hidden_till_disconnect_for_player(player_id,area_id,mystery)
+            end
+        end
+        return
+    end
+    --Add the area to a dict of areas. Since we've started processing this area, we don't want to process it again.
+    hidden_mysteries_for_players[player_id] = {}
+    --Add the player's ID to that dict of areas.
+    hidden_mysteries_for_players[player_id][area_id] = {}
+    local datum_list = {}
+    local revealed_datum_list = {}
+    for i, object_id in next, objects do
+        local object = Net.get_object_by_id(area_id, object_id)
+        --Only allow it if it's a mystery datum, has the new property "Can Be Random" set to true as a bool, and "Once" is set to false as a bool
+        if object.type == "Mystery Datum" and object.custom_properties["Can Be Random"] == "true" and object.custom_properties["Once"] == "false" then
+            --Hide the datum. We want to hide all the mystery data, in fact.
+            ezmemory.hide_object_from_player_till_disconnect(player_id, area_id, object.id)
+            table.insert(datum_list, object.id)
+        end
+    end
+    while mystery_count < area_max_mystery_count do
+        for i = 1, #datum_list, 1 do
+            --Flip a coin.
+            if math.random(1, 20) > 10 and not includes(revealed_datum_list, datum_list[i]) then
+                --If it's heads, we unhide the datum.
+                --Increment the mystery data count if we successfully spawn a single datum.
+                mystery_count = mystery_count + 1
+                table.insert(revealed_datum_list, datum_list[i])
+                --If we're over the minimum count, break out on a chance. We don't ALWAYS want the max.
+                --Chance is ~40%.
+                if mystery_count >= area_min_mystery_count and math.random(1, 20) > 12 or mystery_count == area_max_mystery_count then
+                    --Set mystery data count to max area count so we don't risk running the code again.
+                    mystery_count = area_max_mystery_count
+                    break
+                end
+            end
+        end
+    end
+    hidden_mysteries_for_players[player_id][area_id] = revealed_datum_list
+    for i = 1, #revealed_datum_list, 1 do
+        ezmemory.reveal_object_hidden_till_disconnect_for_player(player_id,area_id,revealed_datum_list[i])
     end
 end
 
@@ -130,6 +262,14 @@ function collect_datum(player_id, object, datum_id_override)
             Net.play_sound_for_player(player_id, sfx.item_get)
         end
 
+        if object.custom_properties["Can Be Random"] then
+            if hidden_mysteries_for_players[player_id][area_id] then
+                for i = 1, #hidden_mysteries_for_players[player_id][area_id], 1 do
+                    local mystery = hidden_mysteries_for_players[player_id][area_id][i]
+                    if mystery ~= nil and mystery == object.id then hidden_mysteries_for_players[player_id][area_id][i] = nil; print("we set entry",i,"to nil") end
+                end
+            end
+        end
 
         if object.custom_properties["Once"] == "true" then
             --If this mystery data should only be available once (not respawning)
