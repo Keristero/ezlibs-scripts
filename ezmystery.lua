@@ -21,12 +21,18 @@ local sfx = {
 --(for money type)
 --    Amount (number) amount of money to give
 
+local function object_is_mystery_data(object)
+    if object.type == "Mystery Data" or object.type == "Mystery Datum" then
+        return true
+    end
+end
+
 Net:on("object_interaction", function(event)
     -- { player_id: string, object_id: number, button: number }
     print(event.player_id, event.object_id, event.button)
     local area_id = Net.get_player_area(event.player_id)
     local object = Net.get_object_by_id(area_id, event.object_id)
-    if object.type == "Mystery Data" or object.type == "Mystery Datum" then
+    if object_is_mystery_data(object) then
         try_collect_datum(event.player_id, area_id, object)
     end
 end)
@@ -36,7 +42,6 @@ function ezmystery.handle_player_disconnect(player_id)
 end
 
 function ezmystery.hide_random_data(player_id)
-    print("we ran this")
     local area_id = Net.get_player_area(player_id)
     local objects = Net.list_objects(area_id)
     --New map properties. Default to making maximum smaller than minimum so that if this isn't setup, it won't be used.
@@ -61,7 +66,7 @@ function ezmystery.hide_random_data(player_id)
     for i, object_id in next, objects do
         local object = Net.get_object_by_id(area_id, object_id)
         --Only allow in to the list if it's a mystery datum that is not set to one-time and it's not locked.
-        if object.type == "Mystery Datum" and object.custom_properties["Once"] ~= "true" and not object.custom_properties["Locked"] ~= "true" then
+        if object_is_mystery_data(object) and object.custom_properties["Once"] ~= "true" and object.custom_properties["Locked"] ~= "true" then
             --Add to the list.
             table.insert(datum_list, object.id)
             --Increment count since we found a datum.

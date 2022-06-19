@@ -272,6 +272,14 @@ lets you place mystery data objects on your maps to give players key items and m
 ## Setup
 add objects to your map with Type=`Mystery Datum` on an object layer above the tile layer where you want the Mystery data to spawn
 
+### Randomizing Spawns
+you can specify the minimum and maximum number of green data that you wish to spawn on any given map by adding these properties to your map.
+By default this behaviour is disabled unless you specify a valid minimum and maximum
+- `Mystery Data Minimum` (number)
+    - minimum number of green data that you wish to appear per jack in.
+- `Mystery Data Maximum` (number)
+    - maximum number of green data that you wish to appear per jack in.
+
 ### Mystery Dataum
 Custom properties:
 - `Type` string
