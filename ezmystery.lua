@@ -57,12 +57,8 @@ function ezmystery.handle_player_transfer(player_id)
     --If we've already processed this area for this player, don't process. We don't want to process the same area twice.
     --That way, we don't rearrange existing mystery data, or data that's already been hidden.
     if hidden_mysteries_for_players[player_id] and hidden_mysteries_for_players[player_id][area_id] then
-        print(hidden_mysteries_for_players[player_id])
-        print("we should stop here.")
         return
     end
-    print(hidden_mysteries_for_players[player_id])
-    print("we didn't stop.")
     --Mystery count used in the loop.
     local mystery_count = 0
     --Amount of mystery data to be found in the area.
@@ -113,10 +109,8 @@ function ezmystery.handle_player_join(player_id)
     --If we've already processed this area for this player, don't process. We don't want to process the same area twice.
     --That way, we don't rearrange existing mystery data, or data that's already been hidden.
     if hidden_mysteries_for_players[player_id] and hidden_mysteries_for_players[player_id][area_id] then
-        print("we should stop here.")
         return
     end
-    print("we didn't stop.")
     --Mystery count used in the loop.
     local mystery_count = 0
     --Amount of mystery data to be found in the area.
@@ -251,7 +245,9 @@ function collect_datum(player_id, object, datum_id_override)
             if hidden_mysteries_for_players[player_id][area_id] then
                 for i = 1, #hidden_mysteries_for_players[player_id][area_id], 1 do
                     local mystery = hidden_mysteries_for_players[player_id][area_id][i]
-                    if mystery ~= nil and mystery == object.id then hidden_mysteries_for_players[player_id][area_id][i] = nil; print("we set entry",i,"to nil") end
+                    if mystery ~= nil and mystery == object.id then
+                        hidden_mysteries_for_players[player_id][area_id][i] = nil
+                    end
                 end
             end
         end
