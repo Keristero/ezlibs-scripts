@@ -97,7 +97,11 @@ function create_bot_from_object(area_id,object_id)
     local direction = placeholder_object.custom_properties.Direction
 
     local npc = create_npc(area_id,npc_asset_name,x,y,z,direction,placeholder_object.name,npc_animation_name,npc_mug_animation_name,npc_turns_to_talk)
-    placeholder_to_botid[tostring(object_id)] = npc.bot_id
+
+    if not placeholder_to_botid[area_id] then
+        placeholder_to_botid[area_id] = {}
+    end
+    placeholder_to_botid[area_id][tostring(object_id)] = npc.bot_id
     --printd('added placeholder mapping '..object_id..' to '..npc.bot_id)
 
     if placeholder_object.custom_properties["Dialogue Type"] then
@@ -404,7 +408,7 @@ function eznpcs.handle_object_interaction(player_id, object_id)
     local relay_object = Net.get_object_by_id(area_id,object_id)
     if relay_object.custom_properties["Interact Relay"] then
         local placeholder_id = relay_object.custom_properties["Interact Relay"]
-        local bot_id = placeholder_to_botid[placeholder_id]
+        local bot_id = placeholder_to_botid[area_id][placeholder_id]
         do_actor_interaction(player_id,bot_id,relay_object)
     end
 end
