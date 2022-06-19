@@ -24,6 +24,16 @@ function get_table_length(tbl)
     return getN
 end
 
+--Grabs the index of a table if it exists. Returns nil if not.
+function helpers.indexOf(array, value)
+    for i, v in ipairs(array) do
+        if v == value then
+            return i
+        end
+    end
+    return nil
+end
+
 function helpers.extract_numbered_properties(object,property_prefix)
     local out_table = {}
     for i=1,20 do
