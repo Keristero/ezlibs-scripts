@@ -5,6 +5,7 @@ local helpers = require('scripts/ezlibs-scripts/helpers')
 local math = require('math')
 
 local object_cache = {}
+local revealed_mysteries_for_players = {}
 
 local sfx = {
     item_get = '/server/assets/ezlibs-assets/sfx/item_get.ogg',
@@ -30,11 +31,71 @@ Net:on("object_interaction", function(event)
     end
 end)
 
+function ezmystery.handle_player_disconnect(player_id)
+    revealed_mysteries_for_players[player_id] = nil
+end
+
+function ezmystery.hide_random_data(player_id)
+    print("we ran this")
+    local area_id = Net.get_player_area(player_id)
+    local objects = Net.list_objects(area_id)
+    --New map properties. Default to making maximum smaller than minimum so that if this isn't setup, it won't be used.
+    local area_min_mystery_count = tonumber(Net.get_area_custom_property(area_id, "Mystery Data Minimum")) or 1
+    local area_max_mystery_count = tonumber(Net.get_area_custom_property(area_id, "Mystery Data Maximum")) or 0
+    --As mentioned, don't do anything if the min is smaller than the max. Safety!
+    if area_min_mystery_count > area_max_mystery_count then return end
+    --If we don't have a record of this player upon transfer (due to reasons like joining in an area without randomized data), then process this player
+    if revealed_mysteries_for_players[player_id] == nil then revealed_mysteries_for_players[player_id] = {} end
+    --If we've already processed this area for this player, don't process. We don't want to process the same area twice.
+    --That way, we don't rearrange existing mystery data, or data that's already been hidden.
+    if revealed_mysteries_for_players[player_id] and revealed_mysteries_for_players[player_id][area_id] then
+        return
+    end
+    --Mystery count used in the loop.
+    local mystery_count = 0
+    --Amount of mystery data to be found in the area.
+    local desired_mystery_count = math.random(area_min_mystery_count, area_max_mystery_count)
+    --Add the area to a dict of player memory. Since we've started processing this area, we don't want to process it again.
+    revealed_mysteries_for_players[player_id][area_id] = {}
+    local datum_list = {}
+    for i, object_id in next, objects do
+        local object = Net.get_object_by_id(area_id, object_id)
+        --Only allow in to the list if it's a mystery datum that is not set to one-time and it's not locked.
+        if object.type == "Mystery Datum" and object.custom_properties["Once"] ~= "true" and not object.custom_properties["Locked"] ~= "true" then
+            --Add to the list.
+            table.insert(datum_list, object.id)
+            --Increment count since we found a datum.
+            mystery_count = mystery_count + 1
+        end
+    end
+    while mystery_count > desired_mystery_count do
+        --Get random mystery index.
+        local index = math.random(#datum_list)
+        --Get random mystery ID.
+        local mystery = datum_list[index]
+        --If it's not already removed, then...
+        if mystery ~= nil then
+            --Hide it.
+            ezmemory.hide_object_from_player_till_disconnect(player_id, area_id, mystery)
+            --Remove it.
+            table.remove(datum_list, helpers.indexOf(datum_list, mystery))
+            --Reassign the mystery count.
+            mystery_count = #datum_list
+        end
+    end
+    revealed_mysteries_for_players[player_id][area_id] = datum_list
+end
+
+function ezmystery.handle_player_transfer(player_id)
+    ezmystery.hide_random_data(player_id)
+end
+
 function ezmystery.handle_player_join(player_id)
     --Load sound effects for mystery data interaction
     for name, path in pairs(sfx) do
         Net.provide_asset_for_player(player_id, path)
     end
+    ezmystery.hide_random_data(player_id)
 end
 
 function try_collect_datum(player_id, area_id, object)
@@ -129,7 +190,6 @@ function collect_datum(player_id, object, datum_id_override)
             Net.message_player(player_id, "Got " .. amount .. "$!")
             Net.play_sound_for_player(player_id, sfx.item_get)
         end
-
 
         if object.custom_properties["Once"] == "true" then
             --If this mystery data should only be available once (not respawning)
