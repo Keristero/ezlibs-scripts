@@ -1,5 +1,7 @@
 local helpers = {}
 local urlencode = require('scripts/ezlibs-scripts/urlencode')
+local locks = {}
+local locks_by_player = {}
 
 --Shorthand globals
 function async(p)
@@ -128,5 +130,43 @@ function helpers.position_overlaps_something(position,area_id)
 
     return false
 end
+
+function helpers.get_lock(player_id,lock_id,timeout)
+    --print(player_id,'trying to get lock ',lock_id)
+    if locks[lock_id] == nil then
+        if not locks_by_player[player_id] then
+            locks_by_player[player_id] = {}
+        end
+        local lock = {
+            release=function()
+                --print(player_id,'released lock',lock_id)
+                if locks_by_player[player_id] then
+                    locks_by_player[player_id][lock_id] = nil
+                end
+                locks[lock_id] = nil
+            end
+        }
+        locks_by_player[player_id][lock_id] = lock
+        locks[lock_id] = lock
+        if timeout then
+            Async.sleep(timeout).and_then(function ()
+                lock.release()
+            end)
+        end
+        --print(player_id,'got lock ',lock_id)
+        return lock
+    end
+    --print(player_id,'failed to get lock ',lock_id)
+    return false
+end
+
+Net:on("player_disconnect", function(event)
+    --release any locks held by a player when they leave the server
+    if locks_by_player[event.player_id] then
+        for lock_id, lock in pairs(locks_by_player[event.player_id]) do
+            lock.release()
+        end
+    end
+end)
 
 return helpers

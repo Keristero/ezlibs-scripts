@@ -165,12 +165,20 @@ function collect_datum(player_id, object, datum_id_override)
         if not validate_datum(object) then
             return
         end
+        --anti spam lock
+        local lock_id = player_id.."_"..area_id.."_"..object.id
+        --lock needs to have a unique id for interaction between this player, and object
+        local lock = helpers.get_lock(player_id,lock_id)
+        if not lock then
+            return
+        end
         if object.custom_properties["Type"] == "random" then
             local random_options = helpers.extract_numbered_properties(object, "Next ")
             local random_selection_id = random_options[math.random(#random_options)]
             if random_selection_id then
                 randomly_selected_datum = ezcache.get_object_by_id_cached(area_id, random_selection_id)
                 await(collect_datum(player_id, randomly_selected_datum, datum_id_override))
+                lock.release()--release lock before return
                 return
             end
         elseif object.custom_properties["Type"] == "keyitem" then
@@ -203,6 +211,7 @@ function collect_datum(player_id, object, datum_id_override)
 
         --Now remove the mystery data
         ezmemory.hide_object_from_player_till_disconnect(player_id, area_id, datum_id_override)
+        lock.release()--release lock before return
     end)
 end
 
