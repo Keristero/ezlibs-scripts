@@ -33,7 +33,8 @@ Net:on("battle_results", function(event)
         ran=event.ran,
         emotion=event.emotion,
         turns=event.turns,
-        enemies=event.enemies
+        enemies=event.enemies,
+        score=event.score
     }
     for i, plugin in ipairs(plugins) do
         if plugin.handle_battle_results then

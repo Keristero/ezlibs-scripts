@@ -119,30 +119,24 @@ ezencounters.try_random_encounter = function (player_id,encounter_table)
 end
 
 ezencounters.begin_encounter_by_name = function(player_id,encounter_name,trigger_object)
-    local encounter_info = named_encounters[encounter_name]
-    if encounter_info then
-        ezencounters.begin_encounter(player_id,encounter_info,trigger_object)
-    else
-        print('[ezencounters] no encounter with name ',encounter_name,' has been added to any encounter tables!')
-    end
+    return async(function ()
+        local encounter_info = named_encounters[encounter_name]
+        if encounter_info then
+            await(ezencounters.begin_encounter(player_id,encounter_info,trigger_object))
+        else
+            print('[ezencounters] no encounter with name ',encounter_name,' has been added to any encounter tables!')
+        end
+    end)
 end
 
 ezencounters.begin_encounter = function (player_id,encounter_info,trigger_object)
-    print('[ezencounters] beginning encounter for',player_id)
-    Net.initiate_encounter(player_id, encounter_info.path,encounter_info)
-    ezencounters.clear_tiles_since_encounter(player_id)
-    players_in_encounters[player_id] = {encounter_info=encounter_info}
-    if trigger_object then
-        encounter_finished_callbacks[player_id] = function (stats)
-            if stats.ran or stats.health == 0 then
-                return -- dont hide the encounter if the player ran or lost
-            end
-            local player_area = Net.get_player_area(player_id)
-            if trigger_object.custom_properties["Once"] == "true" then
-                ezmemory.hide_object_from_player(player_id,player_area,trigger_object.id)
-            end
-        end
-    end
+    return async(function ()
+        --print('[ezencounters] beginning encounter for',player_id)
+        players_in_encounters[player_id] = {encounter_info=encounter_info}
+        ezencounters.clear_tiles_since_encounter(player_id)
+        local stats = await(Async.initiate_encounter(player_id,encounter_info.path,encounter_info))
+        return stats
+    end)
 end
 
 ezencounters.clear_tiles_since_encounter = function (player_id)
@@ -156,20 +150,21 @@ ezencounters.clear_last_position = function (player_id)
     players_in_encounters[player_id] = nil
 end
 
-ezencounters.handle_battle_results = function(player_id, stats)
+Net:on("battle_results", function(event)
+    local player_id = event.player_id
     if players_in_encounters[player_id] then
         local player_encounter = players_in_encounters[player_id]
         if encounter_finished_callbacks[player_id] then
-            encounter_finished_callbacks[player_id](stats)
+            encounter_finished_callbacks[player_id](event)
             encounter_finished_callbacks[player_id] = nil
         end
         if player_encounter.encounter_info.results_callback then
-            player_encounter.encounter_info.results_callback(player_id,player_encounter.encounter_info,stats)
+            player_encounter.encounter_info.results_callback(player_id,player_encounter.encounter_info,event)
         end
         players_in_encounters[player_id] = nil
     end
     -- stats = { health: number, score: number, time: number, ran: bool, emotion: number, turns: number, npcs: { id: String, health: number }[] }
-end
+end)
 
 ezencounters.handle_player_transfer = ezencounters.clear_last_position
 
@@ -179,21 +174,32 @@ ezencounters.handle_player_disconnect = function (player_id)
 end
 
 local function on_radius_encounter_triggered(event)
-    print("RADIUS ENCOUNTER WOOOO")
-    local player_area = Net.get_player_area(event.player_id)
-    local is_hidden_already = ezmemory.object_is_hidden_from_player(event.player_id,player_area,event.object.id)
-    if is_hidden_already then
-        return
-    end
-    local encounter_name = event.object.custom_properties["Name"]
-    if encounter_name then
-        ezencounters.begin_encounter_by_name(event.player_id,encounter_name,event.object)
-    else
-        local encounter_info = {path=event.object.custom_properties["Path"]}
-        ezencounters.begin_encounter(event.player_id,encounter_info,event.object)
-    end
-    
-    ezmemory.hide_object_from_player_till_disconnect(event.player_id,player_area,event.object.id)
+    return async(function ()
+        print('[ezencounters] radius encounter triggered ',event.object.custom_properties)
+        local player_area = Net.get_player_area(event.player_id)
+        local is_hidden_already = ezmemory.object_is_hidden_from_player(event.player_id,player_area,event.object.id)
+        if is_hidden_already then
+            return
+        end
+        local encounter_name = event.object.custom_properties["Name"]
+        local stats = false
+        if encounter_name then
+            stats = await(ezencounters.begin_encounter_by_name(event.player_id,encounter_name,event.object))
+        else
+            local encounter_info = {path=event.object.custom_properties["Path"]}
+            stats = await(ezencounters.begin_encounter(event.player_id,encounter_info,event.object))
+        end
+        if stats then
+            if stats.ran or stats.health == 0 then
+                return stats -- dont hide the encounter if the player ran or lost
+            end
+            local player_area = Net.get_player_area(event.player_id)
+            if event.object.custom_properties["Once"] == "true" then
+                ezmemory.hide_object_from_player(event.player_id,player_area,event.object.id)
+            end
+        end
+        ezmemory.hide_object_from_player_till_disconnect(event.player_id,player_area,event.object.id)
+    end)
 end
 
 local areas = Net.list_areas()
