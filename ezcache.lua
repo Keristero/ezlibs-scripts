@@ -24,7 +24,7 @@ function ezcache.get_object_by_id_cached(area_id, object_id)
     else
         local object_data = Net.get_object_by_id(area_id, object_id)
         if object_data then
-            local should_be_cached = ezcache.object_is_of_type(object_data, ezcache.cache)
+            local should_be_cached = ezcache.object_is_of_type(object_data, ezcache.types)
             if should_be_cached then
                 ezcache.cache[area_id][object_id] = object_data
                 Net.remove_object(area_id, object_id)

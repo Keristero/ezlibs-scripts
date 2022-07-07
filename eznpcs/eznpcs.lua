@@ -339,7 +339,7 @@ function on_npc_reached_waypoint(npc,waypoint)
     end
 end
 
-function add_npcs_to_area(area_id)
+function eznpcs.add_npcs_to_area(area_id)
     --Loop over all objects in area, spawning NPCs for each NPC type object.
     local objects = Net.list_objects(area_id)
     for i, object_id in next, objects do
@@ -357,7 +357,7 @@ function eznpcs.load_npcs()
     local areas = Net.list_areas()
     for i, area_id in next, areas do
         --Add npcs to existing areas on startup
-        add_npcs_to_area(area_id)
+        eznpcs.add_npcs_to_area(area_id)
     end
 end
 
