@@ -177,6 +177,7 @@ function add_behaviour(npc,behaviour)
 end
 
 function clear_player_conversation(player_id)
+    Net.unlock_player_input(player_id)
     local bot_id = current_player_conversation[player_id]
     if bot_id then
         local npc = npcs[bot_id]
@@ -206,6 +207,7 @@ function chat_behaviour()
                 end
 
                 local dialogue = npc.first_dialogue
+                Net.lock_player_input(player_id)
                 await(do_dialogue(npc,player_id,dialogue,relay_object))
                 --printd('finished talking to npc')
                 clear_player_conversation(player_id)

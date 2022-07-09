@@ -1,6 +1,7 @@
 
 local helpers = require('scripts/ezlibs-scripts/helpers')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
+local ezquests = require('scripts/ezlibs-scripts/ezquests')
 
 local function read_item_information(area_id, item_object_id)
     local item_info_object = Net.get_object_by_id(area_id,item_object_id)
@@ -204,6 +205,34 @@ local dialogue_types = {
                 else
                     return dialogue.custom_properties["Next 2"]
                 end
+            end)
+        end
+    },
+    quest_switch={
+        name = "quest_switch",
+        action = function(npc, player_id, dialogue, relay_object)
+            return async(function ()
+                --returns a different next dialogue based on current quest state
+                --specify a quest name as a property
+                local quest_name = dialogue.custom_properties["Quest Name"]
+                local quest_state = ezquests.get_player_quest_state(player_id,quest_name)
+                if dialogue.custom_properties[quest_state] then
+                    return dialogue.custom_properties[quest_state]
+                else
+                    warn('[eznpcs] dialogue node',dialogue.id,'has no custom property for quest state',quest_state)
+                end
+            end)
+        end
+    },
+    quest_event={
+        name = "quest_event",
+        action = function(npc, player_id, dialogue, relay_object)
+            return async(function ()
+                local quest_name = dialogue.custom_properties["Quest Name"]
+                local event_value = dialogue.custom_properties["Event Value"]
+                local next_dialogues = helpers.extract_numbered_properties(dialogue,"Next ")
+                await(ezquests.quest_event(player_id,quest_name,event_value))
+                return first_value_from_table(next_dialogues)
             end)
         end
     },
