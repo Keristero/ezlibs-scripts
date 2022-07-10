@@ -7,6 +7,54 @@ eztriggers.radius_triggers = {}
 eztriggers.rectangle_triggers = {}
 eztriggers._event_table = {}
 
+function eztriggers.add_location_event_trigger(area_id,object)
+    local event_name = object.custom_properties["Event Name"]
+    local emitter
+
+    local trigger_name = "unnamed"
+    if object.name and string.len(object.name) > 0 then
+        trigger_name = object.name
+    end
+
+    print("[eztriggers] Configuring ("..trigger_name..") Location Trigger ↴")
+
+    if object.data then
+        local collision_shape_type = object.data.type
+        if collision_shape_type == "ellipse" then
+            emitter = eztriggers.add_ellipse_trigger(area_id, object, object.width, object.height)
+        elseif collision_shape_type == "rect" then
+            emitter = eztriggers.add_rectangle_trigger(area_id, object, object.width, object.height)
+        else
+            -- no satisfied condition
+            warn("[eztriggers] No collision shape supported: "..collision_shape_type)
+        end
+    else
+        warn("[eztriggers] Location trigger is missing collision data.")
+    end
+    
+    if emitter then
+        print("[eztriggers]"..object.data.type.." trigger added (width="..object.width..", height="..object.height..")")
+        local extra_str = "."
+        if event_name then
+            --If the trigger had an event name, add a handler for activating that event
+            emitter:on("entered",function (event_info)
+                local event = eztriggers._event_table[event_name]
+                if event then
+                    local lock = helpers.get_lock(event_info.player_id, event_info.player_id..":"..event_name)
+                    if lock then
+                        event.action(event_info.player_id,event_info.object).and_then(function()
+                            lock.release()
+                        end)
+                    end
+                end
+            end)
+            print("[eztriggers] Successfully added Location Trigger "..trigger_name.." for event: "..event_name)
+        else
+            warn("[eztriggers] added Location Trigger "..trigger_name.." however no Event Name has been specifed")
+        end
+    end
+end
+
 function eztriggers.add_interact_trigger(area_id,trigger_object)
     if not trigger_object then
         return nil
@@ -23,7 +71,7 @@ function eztriggers.add_interact_trigger(area_id,trigger_object)
     end
 end
 
-function eztriggers.add_radius_trigger(area_id,trigger_object,radius_x,radius_y,event_name)
+function eztriggers.add_ellipse_trigger(area_id,trigger_object,diameter_x,diameter_y,event_name)
     if not trigger_object then
         return nil
     end
@@ -32,7 +80,7 @@ function eztriggers.add_radius_trigger(area_id,trigger_object,radius_x,radius_y,
     end
     if not eztriggers.radius_triggers[area_id][trigger_object.id] then
         local emitter = Net.EventEmitter.new()
-        eztriggers.radius_triggers[area_id][trigger_object.id] = {object=trigger_object,emitter=emitter,overlapping_players={},radius_x=tonumber(radius_x),radius_y=tonumber(radius_y),event_name=event_name}
+        eztriggers.radius_triggers[area_id][trigger_object.id] = {object=trigger_object,emitter=emitter,overlapping_players={},radius_x=tonumber(diameter_x)/2,radius_y=tonumber(diameter_y)/2}
         return emitter
     else
         warn("[eztriggers] "..trigger_object.id.." is already registered as a radius trigger")
@@ -48,12 +96,13 @@ function eztriggers.add_rectangle_trigger(area_id,trigger_object,width,height,ev
     end
     if not eztriggers.rectangle_triggers[area_id][trigger_object.id] then
         local emitter = Net.EventEmitter.new()
-        eztriggers.rectangle_triggers[area_id][trigger_object.id] = {object=trigger_object,emitter=emitter,overlapping_players={},width=tonumber(width),height=tonumber(height),event_name=event_name}
+        eztriggers.rectangle_triggers[area_id][trigger_object.id] = {object=trigger_object,emitter=emitter,overlapping_players={},width=tonumber(width),height=tonumber(height)}
         return emitter
     else
         warn("[eztriggers] "..trigger_object.id.." is already registered as a rectangle trigger")
     end
 end
+
 function eztriggers.handle_object_interaction(player_id,object_id,button)
     --check interact triggers
     local player_area = Net.get_player_area(player_id)
@@ -88,18 +137,6 @@ function eztriggers.handle_player_move(player_id, x, y, z)
                         if not trigger_info.overlapping_players[player_id] then
                             trigger_info.emitter:emit("entered",{player_id=player_id,object=trigger_info.object})
                             trigger_info.overlapping_players[player_id] = true
-
-                            if trigger_info.event_name ~= nil then
-                                local entry = eztriggers._event_table[trigger_info.event_name]
-                                if entry ~= nil then
-                                    local lock = helpers.get_lock(player_id, player_id..":"..trigger_info.event_name)
-                                    if lock then
-                                        entry.action(player_id,trigger_info.object).and_then(function()
-                                            lock.release()
-                                        end)
-                                    end
-                                end
-                            end
                         end
                     else
                         if trigger_info.overlapping_players[player_id] then
@@ -129,19 +166,6 @@ function eztriggers.handle_player_move(player_id, x, y, z)
                 if inside_aabb then
                     if not trigger_info.overlapping_players[player_id] then
                         trigger_info.emitter:emit("entered",{player_id=player_id,object=trigger_info.object})
-
-                        if trigger_info.event_name ~= nil then
-                            local entry = eztriggers._event_table[trigger_info.event_name]
-                            if entry ~= nil then
-                                local lock = helpers.get_lock(player_id, player_id..":"..trigger_info.event_name)
-                                if lock then
-                                    entry.action(player_id,trigger_info.object).and_then(function()
-                                        lock.release()
-                                    end)
-                                end
-                            end
-                        end
-
                         trigger_info.overlapping_players[player_id] = true
                     end
                 else
@@ -208,58 +232,9 @@ for i, area_id in next, areas do
     local objects = Net.list_objects(area_id)
     for i, object_id in next, objects do
         local object = Net.get_object_by_id(area_id, object_id)
-        local event_name = object.custom_properties["Event Name"]
-        local success = false
 
         if object.type == "Location Trigger" then
-            if object.name ~= nil and string.len(object.name) > 0 then
-                print("[eztriggers] Configuring Location Trigger '"..object.name.."' ↴")
-            else
-                print("[eztriggers] Configuring unnamed Location Trigger ↴")
-            end
-
-            if object.data ~= nil then
-                local collision_shape_type = object.data.type
-                if collision_shape_type == "ellipse" then
-                    local radius_x = object.width/2.0
-                    local radius_y = object.height/2.0
-                    local result = eztriggers.add_radius_trigger(area_id, object, radius_x, radius_y, event_name)
-
-                    if result ~= nil then
-                        success = true
-                        print("[eztriggers] Radius trigger added (r1="..radius_x..", r2="..radius_y..")")
-                    end
-                elseif collision_shape_type == "rect" then
-                    local width = object.width
-                    local height = object.height
-                    local result = eztriggers.add_rectangle_trigger(area_id, object, width, height, event_name)
-
-                    if result ~= nil then
-                        success = true
-                        print("[eztriggers] Rectangle trigger added (w="..width..", h="..height..")")
-                    end
-                else
-                    -- no satisfied condition
-                    warn("[eztriggers] No collision shape supported: "..collision_shape_type)
-                end
-            else
-                warn("[eztriggers] Location trigger is missing collision data.")
-            end
-        end
-
-        if success == true then
-            local extra_str = "."
-            if event_name == nil or string.len(event_name) == 0 then 
-                warn("[eztriggers] Did you forget the event? The following Location Trigger does not have a custom event name ↴")
-            else
-                extra_str = " with event name '"..event_name.."'."
-            end
-
-            if object.name ~= nil and string.len(object.name) > 0 then
-                print("[eztriggers] Successfully added Location Trigger '"..object.name.."'"..extra_str)
-            else
-                print("[eztriggers] Successfully added unname Location Trigger")
-            end
+            eztriggers.add_location_event_trigger(area_id,object)
         end
     end
 end

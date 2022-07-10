@@ -210,7 +210,7 @@ for i, area_id in next, areas do
         local object = Net.get_object_by_id(area_id, object_id)
         if object.type == "Radius Encounter" then
             local radius = tonumber(object.custom_properties["Radius"] or 1)
-            local emitter = eztriggers.add_radius_trigger(area_id,object,radius)
+            local emitter = eztriggers.add_ellipse_trigger(area_id,object,radius,radius)
             emitter:on('entered_radius',function(event)
                 return on_radius_encounter_triggered(event)
             end)

@@ -1,2 +1,6 @@
 1. document ezquests and new eznpcs dialogue types for ezquests
+1. remove example quest for ezquests
+1. merge james' pull request adding events to eztriggers and elipses support
+1. add backwards compatibility to 
 1. rewrite ezwarps and have it depend on ezanimations
+1. use server events instead of handler functions everywhere
