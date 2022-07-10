@@ -40,7 +40,7 @@ end
 
 -- Logs the given message on screen --
 function log(message)
-   print('[ezwarps] ' .. message) 
+   print('[ezwarps] '.. message)
 end
 
 function add_landing(area_id, incoming_data, x, y, z, direction, warp_in, arrival_animation)
@@ -96,8 +96,8 @@ end
 function add_radius_warp(object, object_id, area_id, area_name)
     log('adding radius warp... '..object_id)
     local radius = object.custom_properties["Activation Radius"]
-    local radius_warp_emitter = eztriggers.add_radius_trigger(area_id,object,radius)
-    radius_warp_emitter:on("entered_radius",function(event)
+    local radius_warp_emitter = eztriggers.add_radius_trigger(area_id,object,radius,radius)
+    radius_warp_emitter:on("entered",function(event)
         if not players_in_animations[event.player_id] then
             log('using radius warp')
             use_warp(event.player_id,object)

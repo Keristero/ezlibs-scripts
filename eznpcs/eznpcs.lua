@@ -177,7 +177,6 @@ function add_behaviour(npc,behaviour)
 end
 
 function clear_player_conversation(player_id)
-    Net.unlock_player_input(player_id)
     local bot_id = current_player_conversation[player_id]
     if bot_id then
         local npc = npcs[bot_id]
@@ -207,7 +206,6 @@ function chat_behaviour()
                 end
 
                 local dialogue = npc.first_dialogue
-                Net.lock_player_input(player_id)
                 await(do_dialogue(npc,player_id,dialogue,relay_object))
                 --printd('finished talking to npc')
                 clear_player_conversation(player_id)
@@ -294,7 +292,7 @@ end
 function on_npc_reached_waypoint(npc,waypoint)
     local should_be_cached = ezcache.object_is_of_type(waypoint,{"Waypoint"})
     if not should_be_cached then
-        print("[eznpcs] WARNING Waypoint "..waypoint.id.." at "..waypoint.x..","..waypoint.y.." in "..npc.area_id.." has incorrect type and wont be cached")
+        --print("[eznpcs] WARNING Waypoint "..waypoint.id.." at "..waypoint.x..","..waypoint.y.." in "..npc.area_id.." has incorrect type and wont be cached")
     end
     if waypoint.custom_properties['Wait Time'] ~= nil then
         npc.wait_time = tonumber(waypoint.custom_properties['Wait Time'])
@@ -341,7 +339,7 @@ function on_npc_reached_waypoint(npc,waypoint)
     end
 end
 
-function eznpcs.add_npcs_to_area(area_id)
+function add_npcs_to_area(area_id)
     --Loop over all objects in area, spawning NPCs for each NPC type object.
     local objects = Net.list_objects(area_id)
     for i, object_id in next, objects do
@@ -359,7 +357,7 @@ function eznpcs.load_npcs()
     local areas = Net.list_areas()
     for i, area_id in next, areas do
         --Add npcs to existing areas on startup
-        eznpcs.add_npcs_to_area(area_id)
+        add_npcs_to_area(area_id)
     end
 end
 
