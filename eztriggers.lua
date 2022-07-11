@@ -21,7 +21,7 @@ function eztriggers.add_location_event_trigger(area_id,object)
     if object.data then
         local collision_shape_type = object.data.type
         if collision_shape_type == "ellipse" then
-            emitter = eztriggers.add_ellipse_trigger(area_id, object, object.width, object.height)
+            emitter = eztriggers.add_radius_trigger(area_id, object, object.width, object.height, object.width/2,object.height/2)
         elseif collision_shape_type == "rect" then
             emitter = eztriggers.add_rectangle_trigger(area_id, object, object.width, object.height)
         else
@@ -71,7 +71,7 @@ function eztriggers.add_interact_trigger(area_id,trigger_object)
     end
 end
 
-function eztriggers.add_ellipse_trigger(area_id,trigger_object,diameter_x,diameter_y,event_name)
+function eztriggers.add_radius_trigger(area_id,trigger_object,diameter_x,diameter_y,center_x,center_y,event_name)
     if not trigger_object then
         return nil
     end
@@ -80,10 +80,19 @@ function eztriggers.add_ellipse_trigger(area_id,trigger_object,diameter_x,diamet
     end
     if not eztriggers.radius_triggers[area_id][trigger_object.id] then
         local emitter = Net.EventEmitter.new()
-        eztriggers.radius_triggers[area_id][trigger_object.id] = {object=trigger_object,emitter=emitter,overlapping_players={},radius_x=tonumber(diameter_x)/2,radius_y=tonumber(diameter_y)/2}
+        local trigger_info = {
+            object=trigger_object,
+            emitter=emitter,
+            overlapping_players={},
+            radius_x=diameter_x/2,
+            radius_y=diameter_y/2,
+            center_x=trigger_object.x+center_x,
+            center_y=trigger_object.y+center_y
+        }
+        eztriggers.radius_triggers[area_id][trigger_object.id] = trigger_info
         return emitter
     else
-        warn("[eztriggers] "..trigger_object.id.." is already registered as a radius trigger")
+        warn("[eztriggers] "..trigger_object.id.." is already registered as a ellipse trigger")
     end
 end
 
@@ -96,7 +105,14 @@ function eztriggers.add_rectangle_trigger(area_id,trigger_object,width,height,ev
     end
     if not eztriggers.rectangle_triggers[area_id][trigger_object.id] then
         local emitter = Net.EventEmitter.new()
-        eztriggers.rectangle_triggers[area_id][trigger_object.id] = {object=trigger_object,emitter=emitter,overlapping_players={},width=tonumber(width),height=tonumber(height)}
+        local trigger_info = {
+            object=trigger_object,
+            emitter=emitter,
+            overlapping_players={},
+            width=tonumber(width),
+            height=tonumber(height)
+        }
+        eztriggers.rectangle_triggers[area_id][trigger_object.id] = trigger_info
         return emitter
     else
         warn("[eztriggers] "..trigger_object.id.." is already registered as a rectangle trigger")
@@ -126,23 +142,24 @@ function eztriggers.handle_player_move(player_id, x, y, z)
             if trigger_info.object.z == z then
                 local rad_x = trigger_info.radius_x
                 local rad_y = trigger_info.radius_y
-                if not(rad_x == 0 or rad_y == 0) then
-                    local center_x = trigger_info.object.x + rad_x
-                    local center_y = trigger_info.object.y + rad_y
+                local center_x = trigger_info.center_x
+                local center_y = trigger_info.center_y
 
-                    local axis_1 = ((x - center_x)*(x - center_x))/(rad_x*rad_x)
-                    local axis_2 = ((y - center_y)*(y - center_y))/(rad_y*rad_y)
+                if (rad_x == 0 or rad_y == 0) then
+                    return
+                end
 
-                    if (axis_1 + axis_2) <= 1.0 then
-                        if not trigger_info.overlapping_players[player_id] then
-                            trigger_info.emitter:emit("entered",{player_id=player_id,object=trigger_info.object})
-                            trigger_info.overlapping_players[player_id] = true
-                        end
-                    else
-                        if trigger_info.overlapping_players[player_id] then
-                            trigger_info.emitter:emit("departed",{player_id=player_id,object=trigger_info.object})
-                            trigger_info.overlapping_players[player_id] = nil
-                        end
+                local axis_1 = ((x - center_x)*(x - center_x))/(rad_x*rad_x)
+                local axis_2 = ((y - center_y)*(y - center_y))/(rad_y*rad_y)
+                if (axis_1 + axis_2) <= 1.0 then
+                    if not trigger_info.overlapping_players[player_id] then
+                        trigger_info.emitter:emit("entered",{player_id=player_id,object=trigger_info.object})
+                        trigger_info.overlapping_players[player_id] = true
+                    end
+                else
+                    if trigger_info.overlapping_players[player_id] then
+                        trigger_info.emitter:emit("departed",{player_id=player_id,object=trigger_info.object})
+                        trigger_info.overlapping_players[player_id] = nil
                     end
                 end
             end

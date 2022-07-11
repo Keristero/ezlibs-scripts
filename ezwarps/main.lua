@@ -94,9 +94,9 @@ end
 
 -- Adds the given radius warp to the list of detected radius warps
 function add_radius_warp(object, object_id, area_id, area_name)
-    log('adding radius warp... '..object_id)
     local diameter = tonumber(object.custom_properties["Activation Radius"])*2
-    local radius_warp_emitter = eztriggers.add_ellipse_trigger(area_id,object,diameter,diameter)
+    log('adding radius warp '..object_id..", "..diameter)
+    local radius_warp_emitter = eztriggers.add_radius_trigger(area_id,object,diameter,diameter,0,0)
     radius_warp_emitter:on("entered",function(event)
         if not players_in_animations[event.player_id] then
             log('using radius warp')
