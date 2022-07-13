@@ -1,6 +1,13 @@
+1. use server events instead of handler functions everywhere
+1. create ezevents library and use it for all name triggered events
+    1. eznpcs
+    2. ezwarps
+    3. eztriggers
+    4. ezencounters
+1. unify all server start object scanning so that we only need to scan over each object once
+    1. also have it support maps added at runtime
+1. support removal of maps and delete area memory of areas that no longer exist
+1. document new enemies added to ezencounters
 1. document ezquests and new eznpcs dialogue types for ezquests
 1. remove example quest for ezquests
-1. merge james' pull request adding events to eztriggers and elipses support
-1. add backwards compatibility to 
 1. rewrite ezwarps and have it depend on ezanimations
-1. use server events instead of handler functions everywhere
