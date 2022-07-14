@@ -37,9 +37,10 @@ Net:on("object_interaction", function(event)
     end
 end)
 
-function ezmystery.handle_player_disconnect(player_id)
+Net:on("player_disconnect", function(event)
+    local player_id = event.player_id
     revealed_mysteries_for_players[player_id] = nil
-end
+end)
 
 function ezmystery.hide_random_data(player_id)
     local area_id = Net.get_player_area(player_id)
@@ -91,17 +92,19 @@ function ezmystery.hide_random_data(player_id)
     revealed_mysteries_for_players[player_id][area_id] = datum_list
 end
 
-function ezmystery.handle_player_transfer(player_id)
+Net:on("player_area_transfer", function(event)
+    local player_id = event.player_id
     ezmystery.hide_random_data(player_id)
-end
+end)
 
-function ezmystery.handle_player_join(player_id)
+Net:on("player_join", function(event)
+    local player_id = event.player_id
     --Load sound effects for mystery data interaction
     for name, path in pairs(sfx) do
         Net.provide_asset_for_player(player_id, path)
     end
     ezmystery.hide_random_data(player_id)
-end
+end)
 
 function try_collect_datum(player_id, area_id, object)
     return async(function()

@@ -409,12 +409,14 @@ function ezmemory.object_is_hidden_from_player_till_disconnect(player_id,area_id
     return false
 end
 
-function ezmemory.handle_player_disconnect(player_id)
+Net:on("player_disconnect", function(event)
+    local player_id = event.player_id
     --clear objects hidden till rejoin for player
     objects_hidden_till_disconnect_for_player = {}
-end
+end)
 
-function ezmemory.handle_player_join(player_id)
+Net:on("player_join", function(event)
+    local player_id = event.player_id
     --record player to list of players that have joined
     local safe_secret = helpers.get_safe_player_secret(player_id)
     local player_name = Net.get_player_name(player_id)
@@ -434,12 +436,17 @@ function ezmemory.handle_player_join(player_id)
     --update join count
     player_memory.meta.joins = player_memory.meta.joins + 1
     --also treat join as player transfer to do per area logic
-    ezmemory.handle_player_transfer(player_id)
+    handle_player_transfer(player_id)
     --Save player memory
     ezmemory.save_player_memory(safe_secret)
-end
+end)
 
-function ezmemory.handle_player_transfer(player_id)
+Net:on("player_area_transfer", function(event)
+    local player_id = event.player_id
+    handle_player_transfer(player_id)
+end)
+
+function handle_player_transfer(player_id)
     --record player to list of players that have joined
     local safe_secret = helpers.get_safe_player_secret(player_id)
     local player_name = Net.get_player_name(player_id)
@@ -529,10 +536,19 @@ ezmemory.set_player_health = function(player_id, new_health)
     update_player_health(player_id)
 end
 
-function ezmemory.handle_player_avatar_change(player_id, details)
+Net:on("player_avatar_change", function(event)
+    local player_id = event.player_id
+    local details = {
+        texture_path=event.texture_path,
+        animation_path=event.animation_path,
+        name=event.name,
+        element=event.element,
+        max_health=event.max_health,
+        prevent_default=event.prevent_default
+    }
     print('handle avatar change',details)
     player_avatar_details[player_id] = details
     update_player_health(player_id)
-end
+end)
 
 return ezmemory

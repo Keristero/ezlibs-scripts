@@ -178,7 +178,9 @@ function prepare_player_arrival(player_id,x,y,z,special_animation_name)
     return {x=entry_x,y=entry_y,z=entry_z}
 end
 
-function ezwarps.handle_player_request(player_id, data)
+Net:on("player_request", function(event)
+    local player_id = event.player_id
+    local data = event.data
     log('player '..player_id..' requested connection with data: '..data)
     if data == nil or data == "" then
         return
@@ -192,7 +194,7 @@ function ezwarps.handle_player_request(player_id, data)
         end
     end
     log('no landing for '..data)
-end
+end)
 
 --target_object=target_object,
 --object=object,
@@ -260,7 +262,9 @@ function use_warp(player_id,warp_object,warp_meta)
     end)
 end
 
-function ezwarps.handle_custom_warp(player_id, object_id)
+Net:on("custom_warp", function(event)
+    local player_id = event.player_id
+    local object_id = event.object_id
     if ezwarps.player_is_in_animation(player_id) then
         return
     end
@@ -273,14 +277,15 @@ function ezwarps.handle_custom_warp(player_id, object_id)
         return
     end
     use_warp(player_id,object)
-end
+end)
 
-function ezwarps.handle_player_join(player_id)
+Net:on("player_join", function(event)
+    local player_id = event.player_id
     if player_animations[player_id] then
         doAnimationForWarp(player_id,player_animations[player_id],false)
         player_animations[player_id] = nil
     end
-end
+end)
 
 function ezwarps.player_is_in_animation(player_id)
     if players_in_animations[player_id] then
@@ -289,11 +294,12 @@ function ezwarps.player_is_in_animation(player_id)
     return false
 end
 
-function ezwarps.handle_player_transfer(player_id)
+Net:on("player_area_transfer", function(event)
+    local player_id = event.player_id
     if player_animations[player_id] then
         doAnimationForWarp(player_id,player_animations[player_id])
     end
-end
+end)
 
 log('Loaded')
 

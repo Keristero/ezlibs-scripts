@@ -114,12 +114,13 @@ function ezweather.clear_weather_in_area(area_id)
     --end
 end
 
-function ezweather.handle_player_transfer(player_id)
+Net:on("player_area_transfer", function(event)
+    local player_id = event.player_id
     print('[ezweather] player transfered '..player_id)
     local area_id = Net.get_player_area(player_id)
     local area_weather = ezweather.get_area_weather(area_id)
     Net.fade_player_camera(player_id, area_weather.camera_tint, 1)
-end
+end)
 
 function ezweather.handle_player_join(player_id)
     print('[ezweather] player joined '..player_id)

@@ -277,16 +277,18 @@ function update_all_tiles()
     return something_changed
 end
 
-function ezfarms.handle_player_join(player_id)
+Net:on("player_join", function(event)
+    local player_id = event.player_id
     --Load sound effects for player
     for name,path in pairs(sfx) do
         Net.provide_asset_for_player(player_id, path)
     end
     --Load farm, will skip if it is already loaded.
     load_farm()
-end
+end)
 
-function ezfarms.on_tick(delta_time)
+Net:on("tick", function(event)
+    local delta_time = event.delta_time
     if not farm_loaded then
         return
     end
@@ -299,9 +301,11 @@ function ezfarms.on_tick(delta_time)
         end
         delay_till_update = 5
     end
-end
+end)
 
-function ezfarms.handle_post_selection(player_id, post_id)
+Net:on("post_selection", function(event)
+    local player_id = event.player_id
+    local post_id = event.post_id
     if players_using_bbs[player_id] then
         if players_using_bbs[player_id] == "Buy Seeds" then
             try_buy_seed(player_id,post_id)
@@ -323,11 +327,11 @@ function ezfarms.handle_post_selection(player_id, post_id)
             end
         end
     end
-end
+end)
 
-function ezfarms.handle_board_close(player_id)
-    players_using_bbs[player_id] = nil
-end
+Net:on("board_close", function(event)
+    players_using_bbs[event.player_id] = nil
+end)
 
 function try_buy_seed(player_id,plant_name)
     local price = PlantData[plant_name].price
@@ -431,7 +435,9 @@ local function till_tile(tile,x,y,z,player_id)
     end
 end
 
-function ezfarms.handle_object_interaction(player_id, object_id)
+Net:on("object_interaction", function(event)
+    local player_id = event.player_id
+    local object_id = event.object_id
     local player_area = Net.get_player_area(player_id)
     if player_area ~= farm_area then
         return
@@ -453,7 +459,7 @@ function ezfarms.handle_object_interaction(player_id, object_id)
             Net.message_player(player_id,"\x02I could fill something here...\x02",mugshot.texture_path,mugshot.animation_path)
         end
     end
-end
+end)
 
 local function water_tile(tile,tile_loc_string,player_id,safe_secret)
     if tile.gid == Tiles.Dirt or tile.gid == Tiles.DirtWet then
@@ -556,10 +562,12 @@ local function try_plant_seed(tile,tile_loc_string,player_id,seed)
     end
 end
 
-function ezfarms.handle_tile_interaction(player_id, x, y, z, button)
-    local x = math.floor(x)
-    local y = math.floor(y)
-    local z = math.floor(z)
+Net:on("tile_interaction", function(event)
+    local player_id = event.player_id
+    local button = event.button
+    local x = math.floor(event.x)
+    local y = math.floor(event.y)
+    local z = math.floor(event.z)
     local area_id = Net.get_player_area(player_id)
     if area_id ~= farm_area then
         --player is not in farm
@@ -612,6 +620,6 @@ function ezfarms.handle_tile_interaction(player_id, x, y, z, button)
     else
         try_plant_seed(tile,tile_loc_string,player_id,player_tool)
     end
-end
+end)
 
 return ezfarms

@@ -79,11 +79,12 @@ ezencounters.increment_steps_since_encounter = function (player_id)
     end
 end
 
-ezencounters.handle_player_move = function(player_id, x, y, z)
+Net:on("player_move", function(event)
+    local player_id = event.player_id
     local floor = math.floor
-    local rounded_pos_x = floor(x)
-    local rounded_pos_y = floor(y)
-    local rounded_pos_z = floor(z)
+    local rounded_pos_x = floor(event.x)
+    local rounded_pos_y = floor(event.y)
+    local rounded_pos_z = floor(event.z)
     local last_tile = player_last_position[player_id]
     if last_tile then
         if last_tile.x ~= rounded_pos_x or last_tile.y ~= rounded_pos_y or last_tile.z ~= rounded_pos_z then
@@ -94,7 +95,7 @@ ezencounters.handle_player_move = function(player_id, x, y, z)
         player_last_position[player_id] = {x=rounded_pos_x,y=rounded_pos_y,z=rounded_pos_z}
     end
     ezencounters.increment_steps_since_encounter(player_id)
-end
+end)
 
 ezencounters.pick_encounter_from_table = function (encounter_table)
     local total_weight = 0
@@ -166,12 +167,16 @@ Net:on("battle_results", function(event)
     -- stats = { health: number, score: number, time: number, ran: bool, emotion: number, turns: number, npcs: { id: String, health: number }[] }
 end)
 
-ezencounters.handle_player_transfer = ezencounters.clear_last_position
+Net:on("player_area_transfer", function(event)
+    local player_id = event.player_id
+    ezencounters.clear_last_position(player_id)
+end)
 
-ezencounters.handle_player_disconnect = function (player_id)
+Net:on("player_disconnect", function(event)
+    local player_id = event.player_id
     encounter_finished_callbacks[player_id] = nil
     ezencounters.clear_last_position(player_id)
-end
+end)
 
 local function on_radius_encounter_triggered(event)
     return async(function ()

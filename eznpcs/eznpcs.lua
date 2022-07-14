@@ -374,15 +374,20 @@ function eznpcs.add_event(event_object)
     events[event_object.name] = event_object
     printd('added event '..event_object.name)
 end
+
 function eznpcs.create_npc_from_object(area_id,object_id)
     return ( create_bot_from_object(area_id,object_id) )
 end
 
-function eznpcs.handle_actor_interaction(player_id,actor_id)
+Net:on("actor_interaction", function(event)
+    local player_id = event.player_id
+    local actor_id = event.actor_id
+    local button = event.button
     return ( do_actor_interaction(player_id,actor_id) )
-end
+end)
 
-function eznpcs.on_tick(delta_time)
+Net:on("tick", function(event)
+    local delta_time = event.delta_time
     if not custom_events_script_loaded then
         custom_events_script_loaded = true
         helpers.safe_require(custom_events_script_path)
@@ -392,20 +397,25 @@ function eznpcs.on_tick(delta_time)
             npc.on_tick.action(npc,delta_time)
         end
     end
-end
+end)
+
 function eznpcs.create_npc(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mug_animation_name)
     return ( create_npc(area_id,asset_name,x,y,z,direction,bot_name,animation_name,mug_animation_name) )
 end
 
-function eznpcs.handle_player_transfer(player_id)
+Net:on("player_area_transfer", function(event)
+    local player_id = event.player_id
     clear_player_conversation(player_id)
-end
+end)
   
-function eznpcs.handle_player_disconnect(player_id)
+Net:on("player_disconnect", function(event)
+    local player_id = event.player_id
     clear_player_conversation(player_id)
-end
+end)
 
-function eznpcs.handle_object_interaction(player_id, object_id)
+Net:on("object_interaction", function(event)
+    local player_id = event.player_id
+    local object_id = event.object_id
     local area_id = Net.get_player_area(player_id)
     local relay_object = Net.get_object_by_id(area_id,object_id)
     if relay_object.custom_properties["Interact Relay"] then
@@ -413,6 +423,6 @@ function eznpcs.handle_object_interaction(player_id, object_id)
         local bot_id = placeholder_to_botid[area_id][placeholder_id]
         do_actor_interaction(player_id,bot_id,relay_object)
     end
-end
+end)
 
 return eznpcs
