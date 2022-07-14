@@ -1,4 +1,3 @@
-1. use server events instead of handler functions everywhere
 1. create ezevents library and use it for all name triggered events
     1. eznpcs
     2. ezwarps

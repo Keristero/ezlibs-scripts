@@ -619,9 +619,9 @@ local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 
 local custom = {}
 
-custom.on_tick = function (dt)
-    print('custom plugin!')
-end
+Net:on("tick", function(event)
+  print('custom plugin!')
+end)
 
 return custom
 ```
