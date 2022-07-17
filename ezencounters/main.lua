@@ -96,22 +96,7 @@ ezencounters.handle_player_move = function(player_id, x, y, z)
     ezencounters.increment_steps_since_encounter(player_id)
 end
 
-ezencounters.pick_encounter_from_table = function (encounter_table)
-    local total_weight = 0
-    for _, option in ipairs(encounter_table.encounters) do
-        total_weight = total_weight + option.weight
-    end
-    local crawler = math.random() * total_weight
-    for i, option in ipairs(encounter_table.encounters) do
-        crawler = crawler - option.weight
-        if crawler <= 0 then
-            return encounter_table.encounters[i]
-        end
-    end
-    return encounter_table.encounters[1]
-end
-
-ezencounters.pick_freedom_encounter_from_table = function(encounter_table, advantage_string)
+ezencounters.pick_encounter_from_table = function (encounter_table, advantage_string)
     local total_weight = 0
     local encounters = encounter_table.encounters
     if advantage_string == "advantage" then
