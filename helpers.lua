@@ -55,6 +55,14 @@ function helpers.clear_table(tbl)
     end
 end
 
+function helpers.shallow_copy(tbl)
+    local t2 = {}
+    for k,v in pairs(tbl) do
+      t2[k] = v
+    end
+    return t2
+  end
+
 function helpers.split(string, delimiter)
     local table = {}
     for tag, line in string:gmatch('([^' .. delimiter .. ']+)') do

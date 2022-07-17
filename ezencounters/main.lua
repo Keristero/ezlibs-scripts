@@ -61,6 +61,12 @@ local function should_record_step(player_id)
     return true
 end
 
+ezencounters.add_position_info_to_encounter = function(tbl)
+    local spare_table = helpers.shallow_copy(tbl)
+    spare_table.positions = tbl.positions[math.random(1, #tbl.positions)]
+    return spare_table
+end
+
 ezencounters.increment_steps_since_encounter = function (player_id)
     if not should_record_step(player_id) then
         return
@@ -97,19 +103,28 @@ Net:on("player_move", function(event)
     ezencounters.increment_steps_since_encounter(player_id)
 end)
 
-ezencounters.pick_encounter_from_table = function (encounter_table)
+ezencounters.pick_encounter_from_table = function (encounter_table, advantage_string)
     local total_weight = 0
-    for _, option in ipairs(encounter_table.encounters) do
+    print("picking encounter")
+    local encounters = encounter_table.encounters
+    if advantage_string == "advantage" then
+        encounters = encounter_table.advantage_encounters
+    elseif advantage_string == "disadvantage" then
+        encounters = encounter_table.disadvantage_encounters
+    elseif advantage_string == "surrounded" then
+        encounters = encounter_table.surrounded_encounters
+    end
+    for _, option in ipairs(encounters) do
         total_weight = total_weight + option.weight
     end
     local crawler = math.random() * total_weight
-    for i, option in ipairs(encounter_table.encounters) do
+    for i, option in ipairs(encounters) do
         crawler = crawler - option.weight
         if crawler <= 0 then
-            return encounter_table.encounters[i]
+            return encounters[i]
         end
     end
-    return encounter_table.encounters[1]
+    return encounters[1]
 end
 
 ezencounters.try_random_encounter = function (player_id,encounter_table)
@@ -133,9 +148,10 @@ end
 ezencounters.begin_encounter = function (player_id,encounter_info,trigger_object)
     return async(function ()
         --print('[ezencounters] beginning encounter for',player_id)
-        players_in_encounters[player_id] = {encounter_info=encounter_info}
+        local spare_info = ezencounters.add_position_info_to_encounter(encounter_info)
+        players_in_encounters[player_id] = {encounter_info=spare_info}
         ezencounters.clear_tiles_since_encounter(player_id)
-        local stats = await(Async.initiate_encounter(player_id,encounter_info.path,encounter_info))
+        local stats = await(Async.initiate_encounter(player_id,spare_info.path,spare_info))
         return stats
     end)
 end
