@@ -488,13 +488,13 @@ end
 function ezmemory.get_player_max_health(player_id)
     local safe_secret = helpers.get_safe_player_secret(player_id)
     local player_memory = ezmemory.get_player_memory(safe_secret)
-    return player_memory.max_health
+    return player_memory.max_health or Net.get_player_max_health(player_id)
 end
 
 function ezmemory.get_player_health(player_id)
     local safe_secret = helpers.get_safe_player_secret(player_id)
     local player_memory = ezmemory.get_player_memory(safe_secret)
-    return player_memory.health
+    return player_memory.health or Net.get_player_health(player_id)
 end
 
 function ezmemory.set_player_max_health(player_id, new_max_health, should_heal_by_increase)
