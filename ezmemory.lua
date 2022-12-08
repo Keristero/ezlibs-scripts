@@ -18,6 +18,12 @@ local items_path = './memory/items.json'
 local area_path_prefix = './memory/area/'
 local player_path_prefix = './memory/player/'
 
+local memory_loaded_flags = {
+    area_memory=false,
+    player_memory=false,
+    items=false
+}
+
 local highest_item_id = 1
 
 local function load_file_and_then(filename,callback)
@@ -45,6 +51,7 @@ load_file_and_then(items_path,function(value)
         end
         print('[ezmemory] loaded item '..item_id..' = '..item_data.name)
     end
+    memory_loaded_flags.items = true
 end)
 
 --Load list of players that have existed
@@ -57,6 +64,7 @@ load_file_and_then(players_path,function(value)
             print('[ezmemory] loaded memory for '..name)
         end)
     end
+    memory_loaded_flags.player_memory = true
 end)
 
 --Load area memory for every area
@@ -68,6 +76,7 @@ for i, area_id in ipairs(net_areas) do
             print('[ezmemory] loaded area memory for '..area_id)
         end
     end)
+    memory_loaded_flags.area_memory = true
 end
 
 local function update_player_health(player_id)
@@ -146,6 +155,9 @@ function ezmemory.create_or_update_item(item_name,item_description,is_key)
 end
 
 function ezmemory.get_item_id_by_name(item_name)
+    if not memory_loaded_flags.items then
+        error("ezmemory is still loading items, please wait a bit")
+    end
     if item_name_table[item_name] then
         --If there is already an item with this name
         return item_name_table[item_name]
@@ -178,7 +190,18 @@ function ezmemory.save_player_memory(safe_secret)
     end
 end
 
+function ezmemory.dangerously_override_player_memory(safe_secret,new_memory)
+    --Potentially really dangerous, might leave hanging references to the old memory and cause all kinds of trouble, use with absolute caution
+    if player_memory[safe_secret] then
+        player_memory[safe_secret] = new_memory
+        Async.write_file('./memory/player/'..safe_secret..'.json', json.encode(player_memory[safe_secret]))
+    end
+end
+
 function ezmemory.get_area_memory(area_id)
+    if not memory_loaded_flags.area_memory then
+        error("ezmemory is still loading area_memory, please wait a bit")
+    end
     if area_memory[area_id] then
         return area_memory[area_id]
     else
@@ -191,6 +214,9 @@ function ezmemory.get_area_memory(area_id)
 end
 
 function ezmemory.get_player_memory(safe_secret)
+    if not memory_loaded_flags.player_memory then
+        error("ezmemory is still loading area_memory, please wait a bit")
+    end
     if player_memory[safe_secret] then
         return player_memory[safe_secret]
     else
@@ -208,6 +234,9 @@ function ezmemory.get_player_memory(safe_secret)
 end
 
 function ezmemory.get_player_area_memory(safe_secret,area_id)
+    if not memory_loaded_flags.player_memory then
+        error("ezmemory is still loading player_memory, please wait a bit")
+    end
     local player_memory = ezmemory.get_player_memory(safe_secret)
     if player_memory.area_memory[area_id] then
         return player_memory.area_memory[area_id]
