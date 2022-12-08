@@ -408,7 +408,7 @@ end
 function eznpcs.handle_object_interaction(player_id, object_id)
     local area_id = Net.get_player_area(player_id)
     local relay_object = Net.get_object_by_id(area_id,object_id)
-    if relay_object.custom_properties["Interact Relay"] then
+    if relay_object and relay_object.custom_properties["Interact Relay"] then
         local placeholder_id = relay_object.custom_properties["Interact Relay"]
         local bot_id = placeholder_to_botid[area_id][placeholder_id]
         do_actor_interaction(player_id,bot_id,relay_object)

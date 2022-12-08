@@ -55,6 +55,28 @@ function helpers.clear_table(tbl)
     end
 end
 
+function helpers.create_bbs_option(text,id)
+    if id == nil then
+        id = text
+    end
+    return {id= text, read= true, title=text, author= ""}
+end
+
+function helpers.deep_copy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[helpers.deep_copy(orig_key)] = helpers.deep_copy(orig_value)
+        end
+        setmetatable(copy, helpers.deep_copy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
 function helpers.split(string, delimiter)
     local table = {}
     for tag, line in string:gmatch('([^' .. delimiter .. ']+)') do

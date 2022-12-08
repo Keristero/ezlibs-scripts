@@ -266,7 +266,9 @@ function ezwarps.handle_custom_warp(player_id, object_id)
     end
     local player_area = Net.get_player_area(player_id)
     local object = Net.get_object_by_id(player_area, object_id)
-
+    if not object then
+        return
+    end
     local target_object = object.custom_properties["Target Object"]
     local target_area = object.custom_properties["Target Area"]
     if not (target_area and target_object) then

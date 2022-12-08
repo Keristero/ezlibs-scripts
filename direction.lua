@@ -9,6 +9,17 @@ local Direction = {
   DOWN_RIGHT = "Down Right",
 }
 
+Direction.list = {
+  Direction.UP,
+  Direction.LEFT,
+  Direction.DOWN,
+  Direction.RIGHT,
+  Direction.UP_LEFT,
+  Direction.UP_RIGHT,
+  Direction.DOWN_LEFT,
+  Direction.DOWN_RIGHT,
+}
+
 local reverse_table = {
   ["Up"] = "Down",
   ["Left"] = "Left",
