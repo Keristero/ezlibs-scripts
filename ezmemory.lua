@@ -29,9 +29,12 @@ local highest_item_id = 1
 local function load_file_and_then(filename,callback)
     local read_file_promise = Async.read_file(filename)
     read_file_promise.and_then(function(value)
-        print('[ezmemory] loaded file '..filename)
-        if value then
+        if value and value ~= "" then
+            print('[ezmemory] loaded file '..filename)
             callback(value)
+        else
+            warn('[ezmemory] file dont exist '..filename)
+            callback(nil)
         end
     end)
 end
@@ -39,7 +42,11 @@ end
 -- LOAD MEMORY, the order of these files loading matters
 --Load items and their descriptions
 load_file_and_then(items_path,function(value)
-    items = json.decode(value)
+    if value == nil then
+        items = {}
+    else
+        items = json.decode(value)
+    end
     for item_id, item_data in pairs(items) do
         if item_data.key_item then
             Net.create_item(item_id,item_data)
@@ -56,7 +63,11 @@ end)
 
 --Load list of players that have existed
 load_file_and_then(players_path,function(value)
-    player_list = json.decode(value)
+    if value == nil then
+        player_list = {}
+    else
+        player_list = json.decode(value)
+    end
     --Load memory files for every player
     for safe_secret, name in pairs(player_list) do
         load_file_and_then(player_path_prefix..safe_secret..'.json',function (value)
@@ -71,12 +82,11 @@ end)
 local net_areas = Net.list_areas()
 for i, area_id in ipairs(net_areas) do
     load_file_and_then(area_path_prefix..area_id..'.json',function(value)
-        if value ~= "" then
+        if value ~= nil then
             area_memory[area_id] = json.decode(value)
             print('[ezmemory] loaded area memory for '..area_id)
         end
     end)
-    memory_loaded_flags.area_memory = true
 end
 
 local function update_player_health(player_id)
@@ -199,9 +209,6 @@ function ezmemory.dangerously_override_player_memory(safe_secret,new_memory)
 end
 
 function ezmemory.get_area_memory(area_id)
-    if not memory_loaded_flags.area_memory then
-        error("ezmemory is still loading area_memory, please wait a bit")
-    end
     if area_memory[area_id] then
         return area_memory[area_id]
     else
