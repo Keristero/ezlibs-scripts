@@ -94,6 +94,7 @@ Custom properties:
     - for example `heel-navi-exe4_black` (no file extension)
 - `Mug Animation Name` string
     - name of a .animation file to use to animate the NPC's mugshot
+    - the .animation file should be in the /mug folder
 - `Direction` string
     - see the section on [`Directions`](#Directions).
 - `Dialogue Type` string
