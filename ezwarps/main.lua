@@ -28,6 +28,7 @@ local landings = {}
 local player_animations = {}
 local players_in_animations = {}
 local warp_types_with_landings = {"Server Warp","Custom Warp","Interact Warp","Radius Warp"}
+local warp_list_tree = {}
 
 function table_has_value (table, val)
     for index, value in ipairs(table) do
@@ -80,7 +81,66 @@ function doAnimationForWarp(player_id,animation_name,is_leave_animation,warp_obj
     end)
 end
 
+function on_warp_added(object, object_id, area_id, area_name)
+    --store all warps in memory
+    if not warp_list_tree[area_id] then
+        warp_list_tree[area_id] = {}
+    end
+    if not warp_list_tree[area_id][object_id] then
+        local object = Net.get_object_by_id(area_id, object_id)
+        warp_list_tree[area_id][object_id] = {
+            online=false,
+            offline_data = object.data
+        }
+    end
+end
+
+function poll_server_warps()
+    local poll_timeout = 10
+    return async(function ()
+        for area_id, area_warps in pairs(warp_list_tree) do
+            for object_id, warp_data in pairs(warp_list_tree[area_id]) do
+                local warp_object_info = Net.get_object_by_id(area_id,object_id)
+                local address = warp_object_info.custom_properties["Address"]
+                local port = warp_object_info.custom_properties["Port"]
+                local online_GID = warp_object_info.custom_properties["Online GID"]
+                if address and port and online_GID then
+                    print("polling for warp:",area_id,address)
+                    Async.poll_server(address, port).and_then(function (value)
+                        if value.max_message_size then
+                            if not warp_list_tree[area_id][object_id].online then
+                                warp_list_tree[area_id][object_id].online = true
+                                print(address,'Server detected as Online!',value)
+                                local online_data = {
+                                    type = warp_data.offline_data.type,
+                                    gid = warp_data.offline_data.gid-1, -- int
+                                    flipped_horizontally = warp_data.offline_data.flipped_horizontally, -- bool
+                                    flipped_vertically = warp_data.offline_data.flipped_vertically, -- bool
+                                    rotated = warp_data.offline_data.rotated, -- always false
+                                }
+                                Net.set_object_data(area_id, object_id, online_data)
+                            end
+                        else
+                            if warp_list_tree[area_id][object_id].online then
+                                warp_list_tree[area_id][object_id].online = false
+                                print(address,'Server detected as Offline...',value)
+                                Net.set_object_data(area_id, object_id, warp_data.offline_data)
+                            end
+                        end
+                    end)
+                end
+            end
+        end
+        -- every poll_timeout seconds, poll warps
+        await(Async.sleep(poll_timeout))
+        return poll_server_warps()
+    end)
+end
+
+poll_server_warps()
+
 function add_interact_warp(object, object_id, area_id, area_name)
+    on_warp_added(object, object_id, area_id, area_name)
     log('adding interact warp... '..object_id)
     local interact_warp_emitter = eztriggers.add_interact_trigger(area_id,object)
     interact_warp_emitter:on("interaction",function(event)
@@ -94,6 +154,7 @@ end
 
 -- Adds the given radius warp to the list of detected radius warps
 function add_radius_warp(object, object_id, area_id, area_name)
+    on_warp_added(object, object_id, area_id, area_name)
     local diameter = tonumber(object.custom_properties["Activation Radius"])*2
     log('adding radius warp '..object_id..", "..diameter)
     local radius_warp_emitter = eztriggers.add_radius_trigger(area_id,object,diameter,diameter,0,0)
@@ -111,6 +172,7 @@ end
 
 -- Adds the given custom warp to the list of detected custom warps
 function add_custom_warp(object, object_id, area_id, area_name) 
+    on_warp_added(object, object_id, area_id, area_name)
     local warp_is_valid = true
             
     log('adding custom warp with id ' .. object_id .. ' in ' .. area_name .. ' ... ')
@@ -138,6 +200,7 @@ for i, area_id in next, areas do
         local arrival_animation = object.custom_properties["Arrival Animation"]
 
         if table_has_value(warp_types_with_landings,object.type) then
+            on_warp_added(object, object_id, area_id, area_name) --TODO refactor
             --For inter server warps, add landings
             local incoming_data = object.custom_properties["Incoming Data"]
             if incoming_data then
