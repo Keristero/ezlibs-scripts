@@ -10,11 +10,11 @@ function ezquests.add_quest(quest)
         warn('[ezquests] quest has no name')
         return
     end
-    if not quest.handle_event then
+    if not quest.handle_event_async then
         warn('[ezquests] quest',quest.name,'needs a handle_event function')
         return
     end
-    if not quest.handle_event then
+    if not quest.determine_state then
         warn('[ezquests] quest',quest.name,'needs a determine_state function')
         return
     end
@@ -72,32 +72,37 @@ end
 
 function ezquests.get_player_quest_state(player_id,quest_name)
     local quest = ezquests.get_quest(quest_name)
-    return quest.determine_state(player_id)
+    return quest:determine_state(player_id)
 end
 
 function ezquests.quest_event(player_id,quest_name,event_value)
     local quest = ezquests.get_quest(quest_name)
     print('[ezquests] quest=',quest)
-    return quest.handle_event(player_id,event_value)
+    return quest:handle_event_async(player_id,event_value)
 end
 
 
 --testing quest
+--handle_event_async must return a promise
 local quest_get_punched = {
     name = "Get Punched",
-    handle_event = function (player_id,event_value)
+    handle_event_async = function (self,player_id,event_value)
         return async(function ()
-            ezquests.set_player_quest_flag(player_id,'Get Punched',event_value,true)
+            local accpeted = ezquests.get_player_quest_flag(player_id,self.name,'accepted')
+            if accpeted or event_value == "accepted" then
+                --set the flag if the quest is accepted, or we are accpeting it
+                ezquests.set_player_quest_flag(player_id,self.name,event_value,true)
+            end
             if event_value == 'reset' then
-                ezquests.clear_player_quest_flags(player_id,'Get Punched')
+                ezquests.clear_player_quest_flags(player_id,self.name)
             end
         end)
     end,
-    determine_state = function (player_id)
-        if ezquests.get_player_quest_flag(player_id,'Get Punched','punched') then
+    determine_state = function (self,player_id)
+        if ezquests.get_player_quest_flag(player_id,self.name,'punched') then
             return "punched"
         end
-        if ezquests.get_player_quest_flag(player_id,'Get Punched','accepted') then
+        if ezquests.get_player_quest_flag(player_id,self.name,'accepted') then
             return "accepted"
         end
         return "unaccepted"

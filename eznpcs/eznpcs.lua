@@ -17,7 +17,7 @@ local current_player_conversation = {}
 local npc_required_properties = {"Direction","Asset Name"}
 local object_cache = {}
 
-function printd(...)
+local function printd(...)
     local arg={...}
     print('[eznpcs]',table.unpack(arg))
 end
@@ -294,7 +294,7 @@ end
 function on_npc_reached_waypoint(npc,waypoint)
     local should_be_cached = ezcache.object_is_of_type(waypoint,{"Waypoint"})
     if not should_be_cached then
-        print("[eznpcs] WARNING Waypoint "..waypoint.id.." at "..waypoint.x..","..waypoint.y.." in "..npc.area_id.." has incorrect type and wont be cached")
+        printd("WARNING Waypoint "..waypoint.id.." at "..waypoint.x..","..waypoint.y.." in "..npc.area_id.." has incorrect type and wont be cached")
     end
     if waypoint.custom_properties['Wait Time'] ~= nil then
         npc.wait_time = tonumber(waypoint.custom_properties['Wait Time'])
