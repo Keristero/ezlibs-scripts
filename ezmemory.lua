@@ -122,6 +122,15 @@ local function update_player_health(player_id)
     Net.set_player_health(player_id,hp)
 end
 
+function ezmemory.is_loaded()
+    for flag_name, flag_value in pairs(memory_loaded_flags) do
+        if memory_loaded_flags[flag_name] == false then
+            return false
+        end
+    end
+    return true
+end
+
 function ezmemory.get_item_info(item_id)
     if items[item_id] then
         return items[item_id]
