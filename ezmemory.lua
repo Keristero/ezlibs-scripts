@@ -2,9 +2,6 @@ local json = require('scripts/ezlibs-scripts/json')
 local helpers = require('scripts/ezlibs-scripts/helpers')
 local table = require('table')
 local ezmemory = {}
-
-local isChangeHP = true
-
 local player_memory = {}
 local area_memory = {}
 local player_list = {}
@@ -12,9 +9,10 @@ local player_avatar_details = {}
 local items = {}
 local item_name_table = {}
 local objects_hidden_till_disconnect_for_player = {}
+local highest_item_id = 1
 
-local players_path = './memory/players.json'
-local items_path = './memory/items.json'
+local players_path = './memory/players'
+local items_path = './memory/items'
 local area_path_prefix = './memory/area/'
 local player_path_prefix = './memory/player/'
 
@@ -24,75 +22,82 @@ local memory_loaded_flags = {
     items=false
 }
 
+Net:on("player_request", function(event)
+    if not ezmemory.is_loaded() then
+        Net.kick_player(event.player_id, "joined too soon, ezmemory still loading", false)
+        return
+    end
+end)
+
 local function printd(...)
     local arg={...}
     print('[eznpcs]',table.unpack(arg))
 end
 
-local highest_item_id = 1
 
-local function load_file_and_then(filename,callback)
-    local read_file_promise = Async.read_file(filename)
-    read_file_promise.and_then(function(value)
-        if value and value ~= "" then
-            printd('loaded file '..filename)
-            callback(value)
-        else
-            warn('[ezmemory] file does not exist yet '..filename)
-            callback(nil)
+local function ezmemory_load_file(file_path)
+    return async(function ()
+        local data = nil
+        pcall(function()
+            data = json.decode(await(Async.read_file(file_path..".json")))
+        end)
+        if data == nil then
+            pcall(function()
+                data = json.decode(await(Async.read_file(file_path.."_backup.json")))
+            end)
+            if data == nil then
+                return {}
+            end
         end
+        return data
     end)
 end
 
--- LOAD MEMORY, the order of these files loading matters
---Load items and their descriptions
-load_file_and_then(items_path,function(value)
-    if value == nil then
-        items = {}
-    else
-        items = json.decode(value)
-    end
-    for item_id, item_data in pairs(items) do
-        if item_data.key_item then
-            Net.create_item(item_id,item_data)
-        end
-        item_name_table[item_data.name] = item_id
-        local number_item_id = tonumber(item_id)
-        if number_item_id > highest_item_id then
-            highest_item_id = number_item_id
-        end
-        printd('loaded item '..item_id..' = '..item_data.name)
-    end
-    memory_loaded_flags.items = true
-end)
+local function ezmemory_save_file(file_path,value)
+    return async(function ()
+        local json = json.encode(value)
+        await(Async.write_file(file_path.."_backup.json",json))
+        await(Async.write_file(file_path..".json",json))
+    end)
+end
 
---Load list of players that have existed
-load_file_and_then(players_path,function(value)
-    if value == nil then
-        player_list = {}
-    else
-        player_list = json.decode(value)
-    end
-    --Load memory files for every player
-    for safe_secret, name in pairs(player_list) do
-        load_file_and_then(player_path_prefix..safe_secret..'.json',function (value)
-            player_memory[safe_secret] = json.decode(value)
+local function load_all_memory()
+    return async(function ()
+        --Load items
+        items = await(ezmemory_load_file(items_path))
+        for item_id, item_data in pairs(items) do
+            if item_data.key_item then
+                Net.create_item(item_id,item_data)
+            end
+            item_name_table[item_data.name] = item_id
+            local number_item_id = tonumber(item_id)
+            if number_item_id > highest_item_id then
+                highest_item_id = number_item_id
+            end
+            printd('loaded item '..item_id..' = '..item_data.name)
+        end
+        memory_loaded_flags.items = true
+
+        --Load player memory
+        player_list = await(ezmemory_load_file(players_path))
+        for safe_secret, name in pairs(player_list) do
+            player_memory[safe_secret] = await(ezmemory_load_file(player_path_prefix..safe_secret))
             printd('loaded memory for '..name)
-        end)
-    end
-    memory_loaded_flags.player_memory = true
-end)
+        end
+        memory_loaded_flags.player_memory = true
 
---Load area memory for every area
-local net_areas = Net.list_areas()
-for i, area_id in ipairs(net_areas) do
-    load_file_and_then(area_path_prefix..area_id..'.json',function(value)
-        if value ~= nil then
-            area_memory[area_id] = json.decode(value)
+        --Load area memory for every area
+        local net_areas = Net.list_areas()
+        for i, area_id in ipairs(net_areas) do
+            area_memory[area_id] = await(ezmemory_load_file(area_path_prefix..area_id))
             printd('loaded area memory for '..area_id)
         end
+        memory_loaded_flags.area_memory = true
+
     end)
 end
+
+load_all_memory()
 
 local function update_player_health(player_id)
     local area_id = Net.get_player_area(player_id)
@@ -137,7 +142,7 @@ end
 
 function ezmemory.is_loaded()
     for flag_name, flag_value in pairs(memory_loaded_flags) do
-        if memory_loaded_flags[flag_name] == false then
+        if flag_value == false then
             return false
         end
     end
@@ -197,27 +202,22 @@ function ezmemory.get_or_create_item(item_name,item_description,is_key)
 end
 
 function ezmemory.save_items()
-    Async.write_file(items_path, json.encode(items))
+    ezmemory_save_file(items_path,items)
 end
 
 function ezmemory.save_area_memory(area_id)
-    if area_memory[area_id] then
-        Async.write_file('./memory/area/'..area_id..'.json', json.encode(area_memory[area_id]))
-    end
+    ezmemory_save_file('./memory/area/'..area_id,area_memory[area_id])
 end
 
 function ezmemory.save_player_memory(safe_secret)
-    if player_memory[safe_secret] then
-        Async.write_file('./memory/player/'..safe_secret..'.json', json.encode(player_memory[safe_secret]))
-    end
+    ezmemory_save_file('./memory/player/'..safe_secret,player_memory[safe_secret])
 end
 
 function ezmemory.dangerously_override_player_memory(safe_secret,new_memory)
     --Potentially really dangerous, might leave hanging references to the old memory and cause all kinds of trouble, use with absolute caution
-    if player_memory[safe_secret] then
-        player_memory[safe_secret] = new_memory
-        Async.write_file('./memory/player/'..safe_secret..'.json', json.encode(player_memory[safe_secret]))
-    end
+        if player_memory[safe_secret] then
+            ezmemory_save_file('./memory/player/'..safe_secret,new_memory)
+        end
 end
 
 function ezmemory.get_area_memory(area_id)
@@ -266,16 +266,18 @@ function ezmemory.get_player_area_memory(safe_secret,area_id)
     end
 end
 
-function update_player_list(safe_secret,name)
+function ezmemory.update_player_list(safe_secret,name)
     player_list[safe_secret] = name
-    Async.write_file(players_path, json.encode(player_list))
+    ezmemory_save_file(players_path,player_list)
 end
 
 function ezmemory.get_player_name_from_safesecret(safe_secret)
+    local name = "Unknown"
     if player_list[safe_secret] then
-        return player_list[safe_secret]
+        name = player_list[safe_secret]
     end
-    return "Unknown"
+    print("NAME=",name)
+    return name
 end
 
 function ezmemory.give_player_item(player_id, name, amount)
@@ -464,7 +466,7 @@ function ezmemory.handle_player_join(player_id)
     local player_name = Net.get_player_name(player_id)
     --assumes that player memory has already been read from disk
     local player_memory = ezmemory.get_player_memory(safe_secret)
-    update_player_list(safe_secret,player_name)
+    ezmemory.update_player_list(safe_secret,player_name)
     --Send player key items
     for item_id, quantity in pairs(player_memory.items) do
         if items[item_id].key_item then
@@ -505,8 +507,10 @@ function ezmemory.handle_player_transfer(player_id)
     update_player_health(player_id)
     --load memory of area
     local area_memory = ezmemory.get_area_memory(area_id)
-    for object_id, is_hidden in pairs(area_memory.hidden_objects) do
-        Net.exclude_object_for_player(player_id, object_id)
+    if area_memory and area_memory.hidden_objects then
+        for index,object_id in ipairs(area_memory.hidden_objects) do
+            Net.exclude_object_for_player(player_id, object_id)
+        end
     end
     --load player's memory of area
     local player_area_memory = ezmemory.get_player_area_memory(safe_secret,area_id)
