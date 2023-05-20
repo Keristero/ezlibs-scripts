@@ -22,11 +22,11 @@ Supported warp types:
 - `Interact Warp`
     - (a warp activated by interaction)
     - supports arrival animations
-    - supports landing animations
+    - supports leaving animations
 - `Radius Warp`
     - (a warp activated by entering its radius)
     - supports arrival animations
-    - supports landing animations
+    - supports leaving animations
 
 Supported warp custom properties:
 - `Incoming Data` (string) secret to share with the server that is linking to you; for their `Data`
@@ -92,6 +92,9 @@ Custom properties:
 - `Asset Name` string
     - name of npc tilesheet from `yourserver/assets/ezlibs-assets/eznpcs/sheet`
     - for example `heel-navi-exe4_black` (no file extension)
+- `Mug Animation Name` string
+    - name of a .animation file to use to animate the NPC's mugshot
+    - the .animation file should be in the /mug folder
 - `Direction` string
     - see the section on [`Directions`](#Directions).
 - `Dialogue Type` string
