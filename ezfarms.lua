@@ -25,18 +25,18 @@ local plant_ram = {}--non persisted plant related values, keyed by loc_string
 
 local PlantData = {
     Parsnip={price=300,growth_time_multi=0.4,local_gid=0,harvest={1,2}},
-    Cauliflower={price=1200,growth_time_multi=1.2,local_gid=7,harvest={1,1}},
+    Cauli={price=1200,growth_time_multi=1.2,local_gid=7,harvest={1,1}},
     Garlic={price=600,growth_time_multi=0.4,local_gid=14,harvest={2,3}},
     Tomato={price=350,growth_time_multi=1.1,local_gid=21,harvest={1,3}},
     Chili={price=600,growth_time_multi=0.5,local_gid=28,harvest={1,1}},
     Radish={price=550,growth_time_multi=0.6,local_gid=35,harvest={1,1}},
-    ["Star Fruit"]={price=1800,growth_time_multi=1.3,local_gid=42,harvest={1,2}},
+    ["Star"]={price=1800,growth_time_multi=1.3,local_gid=42,harvest={1,2}},
     Eggplant={price=320,growth_time_multi=0.5,local_gid=49,harvest={2,3}},
     Pumpkin={price=1200,growth_time_multi=1.3,local_gid=56,harvest={1,1}},
     Yam={price=900,growth_time_multi=1,local_gid=63,harvest={2,4}},
     Beetroot={price=400,growth_time_multi=1.8,local_gid=70,harvest={1,1}},
-    ["Ancient Fruit"]={price=2800,growth_time_multi=2.8,local_gid=77,harvest={1,1}},
-    ["Sweet Gem"]={price=3000,growth_time_multi=2.4,local_gid=84,harvest={1,2}},
+    ["Ancient"]={price=2800,growth_time_multi=2.8,local_gid=77,harvest={1,1}},
+    ["Sweet"]={price=3000,growth_time_multi=2.4,local_gid=84,harvest={1,2}},
     Blueberry={price=800,growth_time_multi=1.5,local_gid=91,harvest={2,6}},
     Dead={local_gid=98}
 }
@@ -175,11 +175,11 @@ local function update_tile(current_time,loc_string,area_weather)
             local new_plant_data = { 
                 name=tile_memory.plant,
                 visible=true,
-                x=tile_memory.x+0.8,
-                y=tile_memory.y+0.8,
+                x=tile_memory.x+0.6,
+                y=tile_memory.y+0.6,
                 z=tile_memory.z,
-                width=0.5,
-                height=1,
+                width=1,
+                height=2,
                 data=plant_tile_data
             }
             local new_plant_id = Net.create_object(farm_area, new_plant_data)
