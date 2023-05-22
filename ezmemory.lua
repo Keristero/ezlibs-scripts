@@ -61,6 +61,13 @@ local function ezmemory_save_file(file_path,value)
     end)
 end
 
+local function initialize_area_memory_file(area_id)
+    area_memory[area_id] = {
+        hidden_objects = {}
+    }
+    ezmemory.save_area_memory(area_id)
+end
+
 local function load_all_memory()
     return async(function ()
         --Load items
@@ -89,7 +96,12 @@ local function load_all_memory()
         --Load area memory for every area
         local net_areas = Net.list_areas()
         for i, area_id in ipairs(net_areas) do
-            area_memory[area_id] = await(ezmemory_load_file(area_path_prefix..area_id))
+            local mem = await(ezmemory_load_file(area_path_prefix..area_id))
+            if mem.hidden_objects then
+                area_memory[area_id] = mem
+            else
+                initialize_area_memory_file(area_id)
+            end
             printd('loaded area memory for '..area_id)
         end
         memory_loaded_flags.area_memory = true
@@ -138,6 +150,14 @@ local function update_player_health(player_id)
     Net.set_player_max_health(player_id,max_hp,false)
     hp = math.min(hp,max_hp)
     Net.set_player_health(player_id,hp)
+end
+
+function ezmemory.wait_until_loaded()
+    return async(function ()
+        while not ezmemory.is_loaded() do
+            await(Async.sleep(0.2))
+        end
+    end)
 end
 
 function ezmemory.is_loaded()
@@ -224,11 +244,7 @@ function ezmemory.get_area_memory(area_id)
     if area_memory[area_id] then
         return area_memory[area_id]
     else
-        area_memory[area_id] = {
-            hidden_objects = {}
-        }
-        ezmemory.save_area_memory(area_id)
-        return area_memory[area_id]
+        initialize_area_memory_file(area_id)
     end
 end
 
