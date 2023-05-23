@@ -384,7 +384,7 @@ encounter options:
         - `Canodumb` (1,2,3) ~Author Konstinople#7692
         - `Canosmart` (1) ~Author DawnOwl#5358
         - `Volgear` (1,2,3,4) ~Author LouisE#9864
-        - `KillerEye` (1,2,6,7) ~Author LouisE#9864
+        - `KillerEye` (1,4,6,7) ~Author LouisE#9864
         - `DemonEye` (1) ~Author LouisE#9864
         - `JokerEye` (1) ~Author LouisE#9864
         - `HauntedCandle` (1,2,3,4,6,7) ~Author LouisE#9864
@@ -399,6 +399,52 @@ encounter options:
         - `FighterPlane` (1,2,3,4) ~Author DawnOwl#5358
         - `Catack` (1,2,3,4) ~Author DawnOwl#5358
         - `Ratty` (1,2,3,4) ~Author DawnOwl#5358
+        - `Yort` (1,2,3,4,6,7,8) ~Author LouisE#9864
+        - `Volcano` (1,2,3,4,6,7,8) ~Author LouisE#9864
+        - `Swordy` (1,2,3,4,8) ~Author LouisE#9864
+        - `Skarab` (1,4,6,7,8) ~Author LouisE#9864
+        - `Skarry` (1) ~Author LouisE#9864
+        - `Skelly` (1) ~Author LouisE#9864
+        - `Scutz` (1) ~Author LouisE#9864
+        - `Scuttle` (1) ~Author LouisE#9864
+        - `Scuttler` (1) ~Author LouisE#9864
+        - `Scuttzer` (1) ~Author LouisE#9864
+        - `Scuttlest` (1,4) ~Author LouisE#9864
+        - `Lark` (1,4,6,7,8) ~Author LouisE#9864
+        - `Bark` (1) ~Author LouisE#9864
+        - `Tark` (1) ~Author LouisE#9864
+        - `Flashy` (1) ~Author LouisE#9864
+        - `DthFire` (1,4,6,7,8) ~Author LouisE#9864
+        - `FulFire` (1,4,6,7,8) ~Author LouisE#9864
+        - `MetFire` (1,4,6,7,8) ~Author LouisE#9864
+        - `Elemperor` (1,2,3,4,6,7,8) ~Author LouisE#9864
+        - `Dominerd` (1,2,3,4,8) ~Author LouisE#9864
+        - `Cragger` (1,2,3,4,6,7,8) ~Author LouisE#9864
+        - `DarkMech` (1,2,3,4,6,7) ~Honest Signal#7759
+        - `CirKill` (1,4,6,7,8) ~Author LouisE#9864
+        - `CirCrush` (1) ~Author LouisE#9864
+        - `CirSmash` (1) ~Author LouisE#9864
+        - `WindBox` (1,2,3,4,8) ~Author LouisE#9864
+        - `VacuumFan` (1,2,3,4) ~Author LouisE#9864
+        - `OldStove` (1,4,6,7,8) ~Author LouisE#9864
+        - `OldHeater` (1) ~Author LouisE#9864
+        - `OldBurner` (1) ~Author LouisE#9864
+        - `Bunny` (1) ~Author LouisE#9864
+        - `TuffBunny` (1) ~Author LouisE#9864
+        - `MegaBunny` (1) ~Author LouisE#9864
+        - `Bugtank` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `Shrimpy` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `Puffy` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `HotHead` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `ColdHead` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `HardHead` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `Gloomer` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `Doomer` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `Boomer` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `Piranha` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `Breaker` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `Shaker` (1) ~Author LouisE#9864 ??? Versions to be documented
+        - `Quaker` (1) ~Author LouisE#9864 ??? Versions to be documented
 
 - positions (grid)
     - where to spawn each enemy, 0 = no enemy, to spawn an enemy use the index of the enemy you listed in the enemies table you provided (1 = enemy at index 1 in your enemies table)
