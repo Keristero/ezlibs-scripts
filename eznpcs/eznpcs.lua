@@ -172,7 +172,7 @@ function add_behaviour(npc,behaviour)
         if behaviour.initialize then
             behaviour.initialize(npc)
         end
-        printd('added '..behaviour.type..' behaviour to NPC')
+        --printd('added '..behaviour.type..' behaviour to NPC')
     end
 end
 

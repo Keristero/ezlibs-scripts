@@ -3,25 +3,6 @@ local helpers = require('scripts/ezlibs-scripts/helpers')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 local ezquests = require('scripts/ezlibs-scripts/ezquests')
 
-local function read_item_information(area_id, item_object_id)
-    local item_info_object = Net.get_object_by_id(area_id,item_object_id)
-    local item_props = item_info_object.custom_properties
-    local item = {}
-    item.name = item_props["Name"]
-    item.amount = tonumber(item_props["Amount"] or 1)
-    item.description = item_props["Description"] or "???"
-    item.type = item_props["Type"] or "item"
-    item.price = tonumber(item_props["Price"] or 999999)
-    if item.type ~= "money" and not item.name then
-        warn("[eznpcs] item "..item_object_id.." needs a 'Name'")
-        return false
-    end
-    if item.type == "keyitem" and item.description == "???" then
-        warn("[eznpcs] key item "..item_object_id.."("..item.name..") should have a 'Description'")
-        return false
-    end
-    return item
-end
 --Dialogue Types
 local dialogue_types = {
     first={
@@ -90,7 +71,7 @@ local dialogue_types = {
 
                 local check_passed = true
                 for index, item_object_id in ipairs(required_items) do
-                    local item_info = read_item_information(area_id,item_object_id)
+                    local item_info = helpers.read_item_information(area_id,item_object_id)
                     local has_count = 0
                     if item_info then
                         if item_info.type == "money" then
@@ -106,7 +87,7 @@ local dialogue_types = {
                 if check_passed then
                     next_dialogue_id = next_dialogues[1]
                     for index, item_object_id in ipairs(required_items) do
-                        local item_info = read_item_information(area_id,item_object_id)
+                        local item_info = helpers.read_item_information(area_id,item_object_id)
                         if item_info and take_item then
                             if item_info.type == "money" then
                                 ezmemory.spend_player_money(player_id,item_info.amount)
@@ -176,7 +157,7 @@ local dialogue_types = {
 
                 --create list of items for sale
                 for i, item_object_id in ipairs(shop_item_object_ids) do
-                    local item_info = read_item_information(area_id,item_object_id)
+                    local item_info = helpers.read_item_information(area_id,item_object_id)
                     if item_info then
                         local shop_item = {
                             name=item_info.name,
@@ -242,29 +223,9 @@ local dialogue_types = {
             return async(function ()
                 local area_id = Net.get_player_area(player_id)
                 local gift_item_ids = helpers.extract_numbered_properties(dialogue,"Item ")
+                local notify_player = dialogue.custom_properties["Dont Notify"] ~= "true"
                 for index, item_id in ipairs(gift_item_ids) do
-                    local item_info = read_item_information(area_id,item_id)
-                    if item_info then
-                        if item_info.type == "money" then
-                            item_info.name = "$"
-                            --spending negative money gives it instead.
-                            ezmemory.spend_player_money(player_id, -item_info.amount)
-                        else
-                            ezmemory.create_or_update_item(item_info.name,item_info.description,item_info.is_key)
-                            ezmemory.give_player_item(player_id,item_info.name,item_info.amount)
-                        end
-                        local notify_player = dialogue.custom_properties["Dont Notify"] ~= "true"
-                        local message = ""
-                        if notify_player then
-                            if item_info.amount == 1 then
-                                message = "Got "..item_info.name.."!"
-                            elseif item_info.amount > 1 then
-                                message = "Got "..item_info.amount.." "..item_info.name.."!"
-                            end
-                            Net.play_sound_for_player(player_id, '/server/assets/ezlibs-assets/sfx/item_get.ogg')
-                            await(Async.message_player(player_id, message))
-                        end
-                    end
+                    ezmemory.give_item_with_optional_notify(player_id,area_id,item_id,nil,notify_player)
                 end
                 return dialogue.custom_properties["Next 1"]
             end)

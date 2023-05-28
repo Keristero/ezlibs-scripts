@@ -285,20 +285,16 @@ By default this behaviour is disabled unless you specify a valid minimum and max
 
 ### Mystery Dataum
 Custom properties:
+(Same as [`Items`](#Items) with the following extras)
 - `Type` string
-    - one of these three options
-        - money
-        - keyitem
         - random
-- `Amount` number
-    - the amount of money to give the player
-- `Name` string
-    - name of the key item to give the player (the item will be created automatically by ezmystery if it does not exist)
-- `Description` string
-    - description of the key item to give the player, if keyitems with the same name already exist, all of them will be updated with the new description
 - `Next #`: object
     - You can have up to 9 of these, named `Next 1`, `Next 2` etc
     - if using the `random` type, the reward will be selected from a `Mystery Option` type object; randomly selected from a `Next #` property
+- `Once` boolean
+    - like a blue or purple mystery data, this mystery data will never appear again for this player
+- `Locked` boolean
+    - like a purple mystery data, requires an item named `Unlocker` to open
 
 ### Mystery Option
 Custom properties:

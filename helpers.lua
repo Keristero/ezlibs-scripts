@@ -1,5 +1,6 @@
 local helpers = {}
 local urlencode = require('scripts/ezlibs-scripts/urlencode')
+local ezcache = require('scripts/ezlibs-scripts/ezcache')
 local locks = {}
 local locks_by_player = {}
 
@@ -180,6 +181,26 @@ function helpers.get_lock(player_id,lock_id,timeout)
     end
     --print(player_id,'failed to get lock ',lock_id)
     return false
+end
+
+function helpers.read_item_information(area_id, item_object_id)
+    local item_info_object = ezcache.get_object_by_id_cached(area_id,item_object_id)
+    local item_props = item_info_object.custom_properties
+    local item = {}
+    item.name = item_props["Name"]
+    item.amount = tonumber(item_props["Amount"] or 1)
+    item.description = item_props["Description"] or "???"
+    item.type = item_props["Type"] or "item"
+    item.price = tonumber(item_props["Price"] or 999999)
+    if (item.type == "keyitem" or item.type == "item" ) and not item.name then
+        warn("[helpers] item "..item_object_id.." needs a 'Name'")
+        return false
+    end
+    if item.type == "keyitem" and item.description == "???" then
+        warn("[helpers] key item "..item_object_id.."("..item.name..") should have a 'Description'")
+        return false
+    end
+    return item
 end
 
 Net:on("player_disconnect", function(event)

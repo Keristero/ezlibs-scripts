@@ -22,6 +22,17 @@ local memory_loaded_flags = {
     items=false
 }
 
+local sfx = {
+    item_get = '/server/assets/ezlibs-assets/sfx/item_get.ogg',
+}
+
+Net:on("handle_player_join", function(event)
+    --Load sound effects for give_item_with_message
+    for name, path in pairs(sfx) do
+        Net.provide_asset_for_player(event.player_id, path)
+    end
+end)
+
 Net:on("player_request", function(event)
     if not ezmemory.is_loaded() then
         Net.kick_player(event.player_id, "joined too soon, ezmemory still loading", false)
@@ -596,6 +607,41 @@ end
 function ezmemory.handle_player_avatar_change(player_id, details)
     player_avatar_details[player_id] = details
     update_player_health(player_id)
+end
+
+function ezmemory.give_item_with_optional_notify(player_id,area_id,item_object_id,item_info,notify_player)
+    if notify_player == nil then
+        notify_player = true
+    end
+    --item_info is optional
+    return async(function()
+        if not item_info then
+            --if we did not provide item_info, get it now
+            item_info = helpers.read_item_information(area_id, item_object_id)
+            if not item_info then
+                return
+            end
+        end
+        local is_key = item_info.type == "keyitem"
+        local get_message = nil
+
+        if is_key or item_info.type == "item" then
+            ezmemory.create_or_update_item(item_info.name, item_info.description, is_key)
+            ezmemory.give_player_item(player_id, item_info.name, item_info.amount)
+            get_message = "Got " .. item_info.name .. "!"
+            if item_info.amount ~= 1 then
+                get_message = "Got " .. item_info.amount .. " " .. item_info.name .. "!"
+            end
+        elseif item_info.type == "money" then
+            --Give the player money
+            ezmemory.spend_player_money(player_id, -item_info.amount)
+            get_message = "Got " .. item_info.amount .. "$!"
+        end
+        if get_message ~= nil and notify_player == true then
+            Net.play_sound_for_player(player_id, sfx.item_get)
+            await(Async.message_player(player_id,get_message))
+        end
+    end)
 end
 
 return ezmemory

@@ -29,7 +29,6 @@ end
 
 Net:on("object_interaction", function(event)
     -- { player_id: string, object_id: number, button: number }
-    print(event.player_id, event.object_id, event.button)
     local area_id = Net.get_player_area(event.player_id)
     local object = Net.get_object_by_id(area_id, event.object_id)
     if object_is_mystery_data(object) then
@@ -96,10 +95,6 @@ function ezmystery.handle_player_transfer(player_id)
 end
 
 function ezmystery.handle_player_join(player_id)
-    --Load sound effects for mystery data interaction
-    for name, path in pairs(sfx) do
-        Net.provide_asset_for_player(player_id, path)
-    end
     ezmystery.hide_random_data(player_id)
 end
 
@@ -135,46 +130,31 @@ function try_collect_datum(player_id, area_id, object)
     end)
 end
 
-function validate_datum(object)
-    local type = object.custom_properties["Type"]
-    if type == "random" then
+function read_datum_information(area_id,object)
+    local item_info = helpers.read_item_information(area_id, object.id)
+    if not item_info then
+        return false
+    end
+    if item_info.type == "random" then
         local random_options = helpers.extract_numbered_properties(object, "Next ")
         if #random_options == 0 then
             warn('[ezmystery] ' .. object.id .. ' is type=random, but has no Next #')
             return false
         end
-    elseif type == "keyitem" then
-        local name = object.custom_properties["Name"]
-        local description = object.custom_properties["Description"]
-        if not name or not description then
-            warn('[ezmystery] ' .. object.id .. ' has either no name or description')
-            return false
-        end
-    elseif type == "item" then
-        local name = object.custom_properties["Name"]
-        if not name then
-            warn('[ezmystery] ' .. object.id .. ' has no name')
-            return false
-        end
-    elseif type == "money" then
-        local amount = object.custom_properties["Amount"]
-        if not amount then
-            warn('[ezmystery] ' .. object.id .. ' has no amount')
-            return false
-        end
-    else
-        warn('[ezmystery] invalid type for mystery data '.. object.id .. " type= ".. tostring(type))
     end
-    return true
+    return item_info
 end
 
 function collect_datum(player_id, object, datum_id_override)
     return async(function()
         local area_id = Net.get_player_area(player_id)
-        if not validate_datum(object) then
+        local item_info = read_datum_information(area_id,object)
+        if item_info == false then
             return
         end
-        if object.custom_properties["Type"] == "random" then
+
+        local is_key = item_info.type == "keyitem"
+        if item_info.type == "random" then
             local random_options = helpers.extract_numbered_properties(object, "Next ")
             local random_selection_id = random_options[math.random(#random_options)]
             if random_selection_id then
@@ -182,27 +162,8 @@ function collect_datum(player_id, object, datum_id_override)
                 await(collect_datum(player_id, randomly_selected_datum, datum_id_override))
                 return
             end
-        elseif object.custom_properties["Type"] == "keyitem" then
-            local name = object.custom_properties["Name"]
-            local description = object.custom_properties["Description"]
-            --Give the player an item
-            ezmemory.create_or_update_item(name, description, true)
-            ezmemory.give_player_item(player_id, name, 1)
-            Net.message_player(player_id, "Got " .. name .. "!")
-            Net.play_sound_for_player(player_id, sfx.item_get)
-        elseif object.custom_properties["Type"] == "item" then
-            local name = object.custom_properties["Name"]
-            --Give the player an item
-            ezmemory.create_or_update_item(name, "", false)
-            ezmemory.give_player_item(player_id, name, 1)
-            Net.message_player(player_id, "Got " .. name .. "!")
-            Net.play_sound_for_player(player_id, sfx.item_get)
-        elseif object.custom_properties["Type"] == "money" then
-            local amount = object.custom_properties["Amount"]
-            --Give the player money
-            ezmemory.spend_player_money(player_id, -amount)
-            Net.message_player(player_id, "Got " .. amount .. "$!")
-            Net.play_sound_for_player(player_id, sfx.item_get)
+        else
+            await(ezmemory.give_item_with_optional_notify(player_id,area_id,object.id,item_info))
         end
 
         if object.custom_properties["Once"] == "true" then
