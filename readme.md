@@ -631,6 +631,29 @@ Custom Properties:
 - `Path` (string) if name is not specified, you can trigger an encounter with a mob package zip by specifying it's path
 - `Once` (boolean) if true, this encounter will never appear again for this player after they beat it
 
+# ezcheckpoints
+Lets you create checkpoints such as security cubes or gates with unlock requirements
+
+Type: `Checkpoint`
+Custom Properties:
+- `Description` (string) message sent to the player when they inspect the cube
+- `Unlocking Asset Name` (string) the asset name of the unlocking animation,
+    Examples built in:
+    - `bn5cubegreen_bot`
+- `Unlocking Animation Time` (float) the time to display the cube unlock animation for, if you set this too long the animation will loop
+- `Password` (string) you can specify a password that the user will be prompted to input
+- `Key Name` (string) you may specify an item name here which will be required to unlock the checkpoint
+    you can set this to `money` to require money for unlocking the cube
+- `Required Keys` (number) the number of keys required to open the checkpoint
+- `Consume` (bool) set to true if you want the required item/money to be consumed after unlocking
+- `Skip Prompt` (bool) usually the player is prompted to ask if they want to try unlocking the cube with an item/money, this will skip that confirmation (if true)
+- `Unlocked Message` (string) a message to send the player when they unlock the cube
+- `Unlock Failed Message` (string) a message to send the player when they fail to unlock the cube
+- `Once` (bool) set to true if you want this cube to never appear again for this player after they unlock the cube
+- 
+
+
+
 
 # ezweather
 lets you control the weather per map
