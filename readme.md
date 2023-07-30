@@ -642,6 +642,7 @@ Custom Properties:
     - `bn5cubegreen_bot`
 - `Unlocking Animation Time` (float) the time to display the cube unlock animation for, if you set this too long the animation will loop
 - `Password` (string) you can specify a password that the user will be prompted to input
+    (note, the password is currently stored in the map file so its not very secure)
 - `Key Name` (string) you may specify an item name here which will be required to unlock the checkpoint
     you can set this to `money` to require money for unlocking the cube
 - `Required Keys` (number) the number of keys required to open the checkpoint
