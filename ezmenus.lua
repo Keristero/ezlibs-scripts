@@ -2,7 +2,6 @@
 local ezmenus = {}
 
 ezmenus.open_menu = function (player_id,board_name,color,posts)
-    print('opened menu')
     local board_emitter = Net.open_board(player_id, board_name, color, posts)
     board_emitter.close_async = function ()
         return async(function()

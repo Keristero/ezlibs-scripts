@@ -2,6 +2,7 @@ local ezwarps = require('scripts/ezlibs-scripts/ezwarps/main')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 local helpers = require('scripts/ezlibs-scripts/helpers')
 local eztriggers = require('scripts/ezlibs-scripts/eztriggers')
+local CONFIG = require('scripts/ezlibs-scripts/ezconfig')
 
 local ezencounters = {}
 local players_in_encounters = {}
@@ -15,7 +16,7 @@ local load_encounters_for_areas = function ()
     local areas = Net.list_areas()
     local area_encounter_tables = {}
     for i, area_id in ipairs(areas) do
-        local encounter_table_path = 'encounters/'..area_id
+        local encounter_table_path = CONFIG.ENCOUNTERS_PATH..area_id
         local status, err = pcall(function () require(encounter_table_path) end)
         if status == true then
             area_encounter_tables[area_id] = require(encounter_table_path)

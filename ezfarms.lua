@@ -1,5 +1,6 @@
 local ezfarms = {}
 
+local CONFIG = require('scripts/ezlibs-scripts/ezconfig')
 local eznpcs = require('scripts/ezlibs-scripts/eznpcs/eznpcs')
 local ezweather = require('scripts/ezlibs-scripts/ezweather')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
@@ -8,18 +9,11 @@ local helpers = require('scripts/ezlibs-scripts/helpers')
 
 local players_using_bbs = {}
 local player_tools = {}
-local farm_area = 'farm'
+local farm_area = CONFIG.FARM_MAP
 local area_memory = nil
 local delay_till_update = 5 --wait 1 second between updating all farm tiles
-local period_multiplier = 1 --1.0 is real time, 0.5 is double speed
-local reference_seed
-
---Try getting the reference seed, if we cant then there is no map set up for ezfarms and we should cancel loading
-local status, err = pcall(function ()reference_seed = Net.get_object_by_name(farm_area,"Reference Seed")end)
-if err then
-    print('[ezfarms] unable to find the holy Reference Seed in '..farm_area..' aborting loading of ezfarms')
-    return {}
-end
+local period_multiplier = CONFIG.FARM_TIMESCALE --1.0 is real time, 0.5 is double speed
+local reference_seed = Net.get_object_by_name(farm_area,"Reference Seed")
 
 local plant_ram = {}--non persisted plant related values, keyed by loc_string
 
