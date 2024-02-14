@@ -1,3 +1,5 @@
+--ezcache provides get_object_by_id_cached, which is the same is get_object_by_id
+--  except if the object is a type that should be cached, we delete it from the map and only keep it in memory.
 local ezcache = {}
 ezcache.cache = {}
 ezcache.types = {"NPC","Waypoint","Dialogue","Shop Item","Mystery Option"}
