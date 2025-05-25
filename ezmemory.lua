@@ -167,7 +167,7 @@ end
 function ezmemory.wait_until_loaded()
     return async(function ()
         while not ezmemory.is_loaded() do
-            await(Async.sleep(0.2))
+            await(Async.sleep(1))
         end
     end)
 end
@@ -486,6 +486,10 @@ end
 function ezmemory.handle_player_disconnect(player_id)
     --clear objects hidden till rejoin for player
     objects_hidden_till_disconnect_for_player = {}
+end
+
+function ezmemory.get_player_list()
+    return player_list
 end
 
 function ezmemory.handle_player_join(player_id)
