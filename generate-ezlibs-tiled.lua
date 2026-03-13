@@ -64,7 +64,7 @@ local object_types = {
             prop("Once", "bool", false),
             prop("Unlocking Asset Name", "string", "bn5cubegreen_bot"),
             prop("Unlocking Animation Time", "number", 0),
-            prop("Unlocking Sound Path", "file", "/server/assets/ezlibs-assets/sfx/panel_change.ogg"),
+            prop("Unlocking Sound Path", "string", "/server/assets/ezlibs-assets/sfx/panel_change.ogg"),
             prop("Skip Prompt", "bool", false),
             prop("Description", "string", "It's a Security Cube"),
             prop("Unlocked Message", "string", "The Security Cube was unlocked!"),
