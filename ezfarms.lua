@@ -1,19 +1,32 @@
 local ezfarms = {}
 
-local CONFIG = require('scripts/ezlibs-scripts/ezconfig')
 local eznpcs = require('scripts/ezlibs-scripts/eznpcs/eznpcs')
 local ezweather = require('scripts/ezlibs-scripts/ezweather')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 local table = require('table')
 local helpers = require('scripts/ezlibs-scripts/helpers')
+local ezbus = require('scripts/ezlibs-scripts/ezbus')
 
 local players_using_bbs = {}
 local player_tools = {}
-local farm_area = CONFIG.FARM_MAP
+local farm_area = 'farm'
 local area_memory = nil
 local delay_till_update = 5 --wait 1 second between updating all farm tiles
-local period_multiplier = CONFIG.FARM_TIMESCALE --1.0 is real time, 0.5 is double speed
-local reference_seed = Net.get_object_by_name(farm_area,"Reference Seed")
+local period_multiplier = 1 --1.0 is real time, 0.5 is double speed
+local reference_seed
+
+--Try getting the reference seed, if we cant then there is no map set up for ezfarms and we should cancel loading
+if type(farm_area) ~= "string" then
+    print('[ezfarms] Error: farm_area is not a string (got ' .. type(farm_area) .. '). Aborting ezfarms.')
+    return {}
+end
+
+local status, err = pcall(function () reference_seed = Net.get_object_by_name(farm_area, "Reference Seed") end)
+if err or not reference_seed then
+    print('[ezfarms] unable to find the holy Reference Seed in "' .. farm_area .. '" - aborting loading of ezfarms')
+    if err then print('[ezfarms] error: ' .. tostring(err)) end
+    return {}
+end
 
 local plant_ram = {}--non persisted plant related values, keyed by loc_string
 
@@ -422,6 +435,11 @@ local function till_tile(tile,x,y,z,player_id)
         Net.play_sound_for_player(player_id,sfx.hoe)
         update_tile(current_time,tile_loc_string)
         ezmemory.save_area_memory(farm_area)
+        ezbus:emit("farm_action", {
+            player_id = player_id,
+            action = "till",
+            tile = { x = x, y = y, z = z }
+        })
     end
 end
 
@@ -463,6 +481,11 @@ local function water_tile(tile,tile_loc_string,player_id,safe_secret)
             Net.play_sound_for_player(player_id,sfx.water_tile)
             update_tile(current_time,tile_loc_string)
             ezmemory.save_area_memory(farm_area)
+            ezbus:emit("farm_action", {
+                player_id = player_id,
+                action = "water",
+                tile = { x = x, y = y, z = z }
+            })
         else
             Net.message_player(player_id,"CyberWtrCan is out of water...")
         end
@@ -484,6 +507,12 @@ local function plant(tile_loc_string,player_id,seed,current_time)
     end
     update_tile(current_time,tile_loc_string)
     ezmemory.save_area_memory(farm_area)
+    ezbus:emit("farm_action", {
+        player_id = player_id,
+        action = "plant",
+        tile = { x = x, y = y, z = z },
+        seed = seed
+    })
 end
 
 local function deleet_plant(tile_loc_string,current_time)
@@ -501,6 +530,11 @@ local function scythe_plant(tile_loc_string,current_time,prexisting_plant,player
         if prexisting_plant.growth_stage == 5 then
             Net.play_sound_for_player(player_id,sfx.scythe)
             deleet_plant(tile_loc_string,current_time)
+            ezbus:emit("farm_action", {
+                player_id = player_id,
+                action = "scythe",
+                tile = { x = x, y = y, z = z }
+            })
         else
             Net.message_player(player_id,"Oak's words echoed... There's a time and place for everything, but not now.")
         end
@@ -516,6 +550,13 @@ local function harvest(tile_loc_string,player_id,safe_secret,current_time)
     ezmemory.get_or_create_item(plant_name, "mmm, yummy "..plant_name,false)
     ezmemory.give_player_item(player_id, plant_name,harvest_count)
     deleet_plant(tile_loc_string,current_time)
+    ezbus:emit("farm_action", {
+        player_id = player_id,
+        action = "harvest",
+        tile = { x = x, y = y, z = z },
+        plant = plant_name,
+        count = harvest_count
+    })
 end
 
 local function describe_growth_state(growth_stage)
@@ -590,6 +631,11 @@ function ezfarms.handle_tile_interaction(player_id, x, y, z, button)
             local mugshot = Net.get_player_mugshot(player_id)
             Net.message_player(player_id,"\x02\x01...\x01\x02",mugshot.texture_path,mugshot.animation_path)
             Net.message_player(player_id,"\x02I cant help but feel like I just wasted something...\x02",mugshot.texture_path,mugshot.animation_path)
+            ezbus:emit("farm_action", {
+                player_id = player_id,
+                action = "weather_change",
+                new_weather = ezweather.get_area_weather(farm_area).type
+            })
         end
     elseif player_tool == "CyberHoe" then
         if prexisting_plant then

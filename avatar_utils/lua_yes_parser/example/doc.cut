@@ -1,0 +1,80 @@
+# Global keyword `character` defines a new char for the whole script
+# Syntax <Nickname> <Reference>
+!character "Anna" Anna
+!character "Billy" Billy
+
+# Global keyword `var` defines a new var for the whole script
+# Syntax <Key>=<Value>
+# Note that it's possible to add logic to YES but I have not yet decided
+# how to best handle this. 
+# For instance, we could pretend there's an element named `if` and give it
+# a subsequent `endif` element to end the contents between the block.
+!var hello=true
+
+# The highest-order element. All content below `chapter` belongs
+# to `chapter` as a child element.
+# Syntax: <Title>
+chapter "Intro"
+
+# Zoom the camera in at its current position
+# Syntax: <Scale>
+cameraZoom 2
+
+# Immediately change the background
+# Syntax: <Filepath>
+background day.png
+
+# Remember that quotes are really only needed in YES scripts if
+# there are spaces or other quotes. All key-values are internally strings.
+# See the next command element for an example.
+costume Anna character_1.png
+
+# Set the costume for reference Billy to "character_2.png"
+# Syntax <Reference> <Filepath>
+costume Billy "character_2.png"
+
+# Plays the music and volume, stopping what was playing last
+# Syntax <Filepath> <Volume>
+# Volume is in the range 0-1.0
+music intro.mp3 0.25
+
+# Positions a reference character to some x,y coord
+# Syntax <Reference> <X: {expression}> <Y: {expression}>
+# Note that the value for X and Y will need to be evaluated
+# from everything between the { ... } tokens.
+position Anna {screenWidth*0.55} {screenHeight+160}
+position Billy {screenWidth*0.45} {screenHeight+160}
+
+# Enqueue dialoge to the textbox
+# Syntax <Text>
+# Note that these are special commands. We know which references
+# already exist after parsing the globals at the top of the file.
+# So when we see the pattern "Name:" we can remove the colon and match
+# the reference by just Name. This will enqueue the Text and set the
+# speaker to character reference given by Name
+Anna: "Good morning!"
+Billy: "You call this good? It is as crappy as could be."
+slide Anna 2.0 {-screen_width()*0.15} {screen_height()+160}
+
+# Wait command pauses for this many seconds
+# Syntax: <Seconds>
+wait 2
+Anna: "Why, what happened?"
+slide Billy 1.0 {screen_width()*0.15} {screen_height()+160}
+wait 2
+Billy: "Don't you see the fog? Chills me through to the bones."
+Anna: "Sorry to hear that... "
+Anna: "So, can I pass?"
+Billy: "Can I get some exercise cutting you into pieces? Maybe that'll warm me up!"
+background night.png
+Anna: "Oh, it's getting dark!"
+Billy: "Ok, I think I'll be going. Hope you feel better soon."
+slide Billy 2.0 {screen_width()} {screen_height()+160}
+Anna: "Bye!"
+
+# Begin processing commands for the `chapter` element 
+# with name "Second Part"
+jump "Second Part"
+
+# Starts a new chapter element
+chapter "Second Part"
