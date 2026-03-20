@@ -1,10 +1,11 @@
 local helpers = require('scripts/ezlibs-scripts/helpers')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 local ezbus = require('scripts/ezlibs-scripts/ezbus')
+local CONFIG = require('scripts/ezlibs-scripts/ezconfig')
 
 local ezemail = {}
 -- tweak these
-local NEW_MAIL_MESSAGE_DELAY = 1.5        -- seconds: wait after ring before message_player
+local NEW_MAIL_MESSAGE_DELAY = CONFIG.NEW_MAIL_MESSAGE_DELAY or 1.5        -- seconds: wait after ring before message_player
 local ENABLE_TEST_EMAIL_ON_JOIN = false    -- set false after you finish tuning
 local TEST_EMAIL_DELAY = 2.0              -- seconds (start same as NEW_MAIL_MESSAGE_DELAY)
 local EZEMAIL_DEBUG = true -- set false after verified
