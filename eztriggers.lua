@@ -1,4 +1,5 @@
 local helpers = require('scripts/ezlibs-scripts/helpers')
+local object_registry = require('scripts/ezlibs-scripts/object_registry')
 
 local eztriggers = {}
 
@@ -241,20 +242,10 @@ function eztriggers.handle_player_disconnect(player_id)
     eztriggers.clear_rectangle_overlaps_for_player(player_id)
 end
 
--- Detect all warps across all rooms
-local areas = Net.list_areas()
-for i, area_id in next, areas do
-    local area_name = Net.get_area_name(area_id)
-
-    local objects = Net.list_objects(area_id)
-    for i, object_id in next, objects do
-        local object = Net.get_object_by_id(area_id, object_id)
-
-        if object.type == "Location Trigger" then
-            eztriggers.add_location_event_trigger(area_id,object)
-        end
-    end
-end
+-- Register handler for Location Trigger objects
+object_registry.register_handler("Location Trigger", function(area_id, object)
+    eztriggers.add_location_event_trigger(area_id, object)
+end)
 
 print("[eztriggers] Loaded")
 return eztriggers

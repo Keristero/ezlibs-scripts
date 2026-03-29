@@ -1,4 +1,5 @@
 local ezweather = {}
+local ezbus = require('scripts/ezlibs-scripts/ezbus')
 
 local volatile_memory = {}
 
@@ -40,6 +41,10 @@ function ezweather.start_rain_in_area(area_id)
     Net.set_area_custom_property(area_id, "Foreground Vel Y", 0.3)
 
     fade_camera_for_players_in_area(area_id)
+    ezbus:emit("weather_changed", {
+        area_id = area_id,
+        new_type = "rain"
+    })
 end
 
 function ezweather.start_snow_in_area(area_id)
@@ -62,6 +67,10 @@ function ezweather.start_snow_in_area(area_id)
     Net.set_area_custom_property(area_id, "Foreground Vel Y", -0.1)
 
     fade_camera_for_players_in_area(area_id)
+    ezbus:emit("weather_changed", {
+        area_id = area_id,
+        new_type = "snow"
+    })
 end
 
 function ezweather.start_fog_in_area(area_id)
@@ -79,6 +88,10 @@ function ezweather.start_fog_in_area(area_id)
     Net.set_area_custom_property(area_id, "Foreground Vel Y", 0.05)
 
     fade_camera_for_players_in_area(area_id)
+    ezbus:emit("weather_changed", {
+        area_id = area_id,
+        new_type = "fog"
+    })
 end
 
 function fade_camera_for_players_in_area(area_id)
@@ -112,6 +125,10 @@ function ezweather.clear_weather_in_area(area_id)
     --if fine_weather_properties[area_id].song then
     --    Net.set_song(area_id,fine_weather_properties[area_id].song)
     --end
+    ezbus:emit("weather_changed", {
+        area_id = area_id,
+        new_type = "clear"
+    })
 end
 
 function ezweather.handle_player_transfer(player_id)

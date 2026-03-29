@@ -51,14 +51,14 @@ local function escape_char(c)
 end
 
 
-local function encode_nil(val)
+local function encode_nil(...)
   return "null"
 end
 
 
-local function encode_table(val, stack)
-  local res = {}
+local function encode_table(val, stack, indent_unit, level)
   stack = stack or {}
+  local res = {}
 
   -- Circular reference?
   if stack[val] then error("circular reference") end
@@ -77,33 +77,77 @@ local function encode_table(val, stack)
     if n ~= #val then
       error("invalid table: sparse array")
     end
-    -- Encode
-    for i, v in ipairs(val) do
-      table.insert(res, encode(v, stack))
+
+    if indent_unit then
+      -- Pretty‑printed array
+      if #val == 0 then
+        stack[val] = nil
+        return "[]"
+      end
+      local lines = { "[" }
+      for i, v in ipairs(val) do
+        local line = string.rep(indent_unit, level + 1) ..
+                     encode(v, stack, indent_unit, level + 1)
+        if i ~= #val then line = line .. "," end
+        table.insert(lines, line)
+      end
+      table.insert(lines, string.rep(indent_unit, level) .. "]")
+      stack[val] = nil
+      return table.concat(lines, "\n")
+    else
+      -- Compact array
+      for i, v in ipairs(val) do
+        table.insert(res, encode(v, stack))
+      end
+      stack[val] = nil
+      return "[" .. table.concat(res, ",") .. "]"
     end
-    stack[val] = nil
-    return "[" .. table.concat(res, ",") .. "]"
 
   else
     -- Treat as an object
-    for k, v in pairs(val) do
-      if type(k) ~= "string" then
-        error("invalid table: mixed or invalid key types")
+    if indent_unit then
+      -- Pretty‑printed object
+      local keys = {}
+      for k in pairs(val) do
+        if type(k) ~= "string" then
+          error("invalid table: mixed or invalid key types")
+        end
+        table.insert(keys, k)
       end
-      table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
+      table.sort(keys)
+      local lines = { "{" }
+      for i, k in ipairs(keys) do
+        local v = val[k]
+        local line = string.rep(indent_unit, level + 1) ..
+                     encode(k, stack, indent_unit, level + 1) .. ": " ..
+                     encode(v, stack, indent_unit, level + 1)
+        if i ~= #keys then line = line .. "," end
+        table.insert(lines, line)
+      end
+      table.insert(lines, string.rep(indent_unit, level) .. "}")
+      stack[val] = nil
+      return table.concat(lines, "\n")
+    else
+      -- Compact object
+      for k, v in pairs(val) do
+        if type(k) ~= "string" then
+          error("invalid table: mixed or invalid key types")
+        end
+        table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
+      end
+      stack[val] = nil
+      return "{" .. table.concat(res, ",") .. "}"
     end
-    stack[val] = nil
-    return "{" .. table.concat(res, ",") .. "}"
   end
 end
 
 
-local function encode_string(val)
+local function encode_string(val, ...)
   return '"' .. val:gsub('[%z\1-\31\\"]', escape_char) .. '"'
 end
 
 
-local function encode_number(val)
+local function encode_number(val, ...)
   -- Check for NaN, -inf and inf
   if val ~= val or val <= -math.huge or val >= math.huge then
     error("unexpected number value '" .. tostring(val) .. "'")
@@ -121,18 +165,25 @@ local type_func_map = {
 }
 
 
-encode = function(val, stack)
+encode = function(val, stack, indent_unit, level)
+  stack = stack or {}
   local t = type(val)
   local f = type_func_map[t]
   if f then
-    return f(val, stack)
+    return f(val, stack, indent_unit, level)
   end
   error("unexpected type '" .. t .. "'")
 end
 
 
-function json.encode(val)
-  return ( encode(val) )
+function json.encode(val, pretty)
+  local indent_unit
+  if type(pretty) == "string" then
+    indent_unit = pretty
+  elseif pretty then
+    indent_unit = "  "
+  end
+  return encode(val, nil, indent_unit, 0)
 end
 
 

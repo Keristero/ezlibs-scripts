@@ -4,7 +4,6 @@ local ezcache = require('scripts/ezlibs-scripts/ezcache')
 local locks = {}
 local locks_by_player = {}
 
---Shorthand globals
 function async(p)
     local co = coroutine.create(p)
     return Async.promisify(co)
@@ -27,7 +26,6 @@ function get_table_length(tbl)
     return getN
 end
 
---Grabs the index of a table if it exists. Returns nil if not.
 function helpers.indexOf(array, value)
     for i, v in ipairs(array) do
         if v == value then
@@ -48,7 +46,6 @@ function helpers.extract_numbered_properties(object,property_prefix)
     return out_table
 end
 
---helpers lib
 function helpers.clear_table(tbl)
     local count = #tbl
     for i = 0, count do
@@ -72,7 +69,7 @@ function helpers.deep_copy(orig)
             copy[helpers.deep_copy(orig_key)] = helpers.deep_copy(orig_value)
         end
         setmetatable(copy, helpers.deep_copy(getmetatable(orig)))
-    else -- number, string, boolean, etc
+    else
         copy = orig
     end
     return copy
@@ -107,16 +104,12 @@ function helpers.safe_require(script_path)
 end
 
 function helpers.date_string_to_timestamp(date_string)
-    --expect basic cron like date format, only supporting * or specific values
-    --0 0 10 15 * * this would be on the 15th of every month at 10AM
-    --seconds, minute, hour, day, month, year
     local current_date = os.date("*t")
     local date_parts = helpers.split(date_string," ")
     if #date_parts < 6 then
         return nil
     end
     local date_part_keys = {"sec","min","hour","day","month","year"}
-    --everywhere that is not a * in the date string, replace time value with specified time
     for index, value in ipairs(date_parts) do
         if value ~= "*" then
             local date_part_key = date_part_keys[index]
@@ -136,10 +129,8 @@ function helpers.is_now_before_date(date_string)
 end
 
 function helpers.position_overlaps_something(position,area_id)
-    --Returns true if a position (with a size) overlaps something important
     local player_ids = Net.list_players(area_id)
 
-    --Check for overlap against players
     for i = 1, #player_ids, 1 do
         local player_pos = Net.get_player_position(player_ids[i])
         if
@@ -155,14 +146,12 @@ function helpers.position_overlaps_something(position,area_id)
 end
 
 function helpers.get_lock(player_id,lock_id,timeout)
-    --print(player_id,'trying to get lock ',lock_id)
     if locks[lock_id] == nil then
         if not locks_by_player[player_id] then
             locks_by_player[player_id] = {}
         end
         local lock = {
             release=function()
-                --print(player_id,'released lock',lock_id)
                 if locks_by_player[player_id] then
                     locks_by_player[player_id][lock_id] = nil
                 end
@@ -176,10 +165,8 @@ function helpers.get_lock(player_id,lock_id,timeout)
                 lock.release()
             end)
         end
-        --print(player_id,'got lock ',lock_id)
         return lock
     end
-    --print(player_id,'failed to get lock ',lock_id)
     return false
 end
 
@@ -203,8 +190,47 @@ function helpers.read_item_information(area_id, item_object_id)
     return item
 end
 
+-- ============================================================================
+-- Cross‑platform directory creation
+-- ============================================================================
+function helpers.ensure_directory(path)
+    -- Remove trailing slashes for mkdir command
+    local dir = path:gsub("[/\\]+$", "")
+    if dir == "" then return end
+
+    -- Try LuaFileSystem first
+    local has_lfs, lfs = pcall(require, "lfs")
+    if has_lfs then
+        local attr = lfs.attributes(dir)
+        if not attr then
+            local ok, err = pcall(lfs.mkdir, dir)
+            if ok then
+                print("[helpers] Created directory:", dir)
+            else
+                print("[helpers] Warning: Could not create directory", dir, "error:", err)
+            end
+        elseif attr.mode ~= "directory" then
+            print("[helpers] Warning:", dir, "exists but is not a directory.")
+        end
+        return
+    end
+
+    -- Fallback: use os.execute with platform detection
+    local command
+    if package.config:sub(1,1) == '\\' then -- Windows
+        command = 'if not exist "' .. dir .. '" mkdir "' .. dir .. '"'
+    else -- Unix-like
+        command = 'mkdir -p "' .. dir .. '"'
+    end
+    local success = pcall(os.execute, command)
+    if success then
+        print("[helpers] Created directory via os.execute:", dir)
+    else
+        print("[helpers] Warning: Could not create directory", dir, "via os.execute. Please create it manually.")
+    end
+end
+
 Net:on("player_disconnect", function(event)
-    --release any locks held by a player when they leave the server
     if locks_by_player[event.player_id] then
         for lock_id, lock in pairs(locks_by_player[event.player_id]) do
             lock.release()

@@ -2,7 +2,9 @@ local ezwarps = require('scripts/ezlibs-scripts/ezwarps/main')
 local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
 local helpers = require('scripts/ezlibs-scripts/helpers')
 local eztriggers = require('scripts/ezlibs-scripts/eztriggers')
-local CONFIG = require('scripts/ezlibs-scripts/ezconfig')
+local object_registry = require('scripts/ezlibs-scripts/object_registry')
+local ezbus = require('scripts/ezlibs-scripts/ezbus')
+local ezconfig = require('scripts/ezlibs-scripts/ezconfig')
 
 local ezencounters = {}
 local players_in_encounters = {}
@@ -12,11 +14,14 @@ local named_encounters = {}
 local provided_encounter_assets = {}
 local encounter_finished_callbacks = {}
 
+-- Ensure encounters directory exists
+helpers.ensure_directory(ezconfig.ENCOUNTERS_PATH)
+
 local load_encounters_for_areas = function ()
     local areas = Net.list_areas()
     local area_encounter_tables = {}
     for i, area_id in ipairs(areas) do
-        local encounter_table_path = CONFIG.ENCOUNTERS_PATH..area_id
+        local encounter_table_path = ezconfig.ENCOUNTERS_PATH .. area_id
         local status, err = pcall(function () require(encounter_table_path) end)
         if status == true then
             area_encounter_tables[area_id] = require(encounter_table_path)
@@ -119,13 +124,16 @@ ezencounters.try_random_encounter = function (player_id,encounter_table)
     end
 end
 
+-- FIXED: Now returns the stats
 ezencounters.begin_encounter_by_name = function(player_id,encounter_name,trigger_object)
     return async(function ()
         local encounter_info = named_encounters[encounter_name]
         if encounter_info then
-            await(ezencounters.begin_encounter(player_id,encounter_info,trigger_object))
+            local stats = await(ezencounters.begin_encounter(player_id,encounter_info,trigger_object))
+            return stats
         else
             print('[ezencounters] no encounter with name ',encounter_name,' has been added to any encounter tables!')
+            return nil
         end
     end)
 end
@@ -135,6 +143,11 @@ ezencounters.begin_encounter = function (player_id,encounter_info,trigger_object
         --print('[ezencounters] beginning encounter for',player_id)
         players_in_encounters[player_id] = {encounter_info=encounter_info}
         ezencounters.clear_tiles_since_encounter(player_id)
+        ezbus:emit("encounter_started", {
+            player_id = player_id,
+            encounter_info = encounter_info,
+            trigger_object = trigger_object
+        })
         local stats = await(Async.initiate_encounter(player_id,encounter_info.path,encounter_info))
         return stats
     end)
@@ -165,6 +178,18 @@ Net:on("battle_results", function(event)
         players_in_encounters[player_id] = nil
     end
     -- stats = { health: number, score: number, time: number, ran: bool, emotion: number, turns: number, npcs: { id: String, health: number }[] }
+    ezbus:emit("encounter_finished", {
+        player_id = player_id,
+        stats = {
+            health = event.health,
+            time = event.time,
+            ran = event.ran,
+            emotion = event.emotion,
+            turns = event.turns,
+            enemies = event.enemies,
+            score = event.score
+        }
+    })
 end)
 
 ezencounters.handle_player_transfer = ezencounters.clear_last_position
@@ -203,20 +228,13 @@ local function on_radius_encounter_triggered(event)
     end)
 end
 
-local areas = Net.list_areas()
-for i, area_id in next, areas do
-    --filter and store an array of all radius encounters
-    local objects = Net.list_objects(area_id)
-    for j, object_id in next, objects do
-        local object = Net.get_object_by_id(area_id, object_id)
-        if object.type == "Radius Encounter" then
-            local radius = tonumber(object.custom_properties["Radius"] or 1)
-            local emitter = eztriggers.add_radius_trigger(area_id,object,radius,radius,0,0)
-            emitter:on('entered_radius',function(event)
-                return on_radius_encounter_triggered(event)
-            end)
-        end
-    end
-end
+-- Register handler for Radius Encounter objects
+object_registry.register_handler("Radius Encounter", function(area_id, object)
+    local radius = tonumber(object.custom_properties["Radius"] or 1)
+    local emitter = eztriggers.add_radius_trigger(area_id, object, radius, radius, 0, 0)
+    emitter:on('entered', function(event)
+        return on_radius_encounter_triggered(event)
+    end)
+end)
 
 return ezencounters

@@ -22,7 +22,7 @@ Direction.list = {
 
 local reverse_table = {
   ["Up"] = "Down",
-  ["Left"] = "Left",
+  ["Left"] = "Right",
   ["Down"] = "Up",
   ["Right"] = "Left",
   ["Up Left"] = "Down Right",

@@ -70,13 +70,21 @@ function ezquests.get_quest(quest_name)
     end
 end
 
-function ezquests.get_player_quest_state(player_id,quest_name)
+function ezquests.get_player_quest_state(player_id, quest_name)
     local quest = ezquests.get_quest(quest_name)
+    if not quest then
+        warn('[ezquests] quest "' .. tostring(quest_name) .. '" not found, returning nil')
+        return nil
+    end
     return quest:determine_state(player_id)
 end
 
 function ezquests.quest_event(player_id,quest_name,event_value)
     local quest = ezquests.get_quest(quest_name)
+    if not quest then
+        warn('[ezquests] cannot send event: quest "' .. tostring(quest_name) .. '" not found')
+        return async(function() end)()  -- return empty promise
+    end
     print('[ezquests] quest=',quest)
     return quest:handle_event_async(player_id,event_value)
 end
