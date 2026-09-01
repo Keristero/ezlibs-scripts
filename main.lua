@@ -11,7 +11,6 @@ local ezmystery = require('scripts/ezlibs-scripts/ezmystery')
 local ezweather = require('scripts/ezlibs-scripts/ezweather')
 local ezwarps = require('scripts/ezlibs-scripts/ezwarps/main')
 local ezfarms = require('scripts/ezlibs-scripts/ezfarms')
-helpers.safe_require('scripts/events/eznpcs_onceitem')
 local ezcheckpoints = require('scripts/ezlibs-scripts/ezcheckpoints')
 local ezannouncement = require('scripts/ezlibs-scripts/ezannounce/ezannounce')
 local ezemail = require('scripts/ezlibs-scripts/ezemail')
@@ -64,7 +63,7 @@ Net:on("battle_results", function(event)
     local stats = {
         health=event.health,
         time=event.time,
-        ran=event.ran,
+        reason=event.reason,
         emotion=event.emotion,
         turns=event.turns,
         enemies=event.enemies,

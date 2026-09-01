@@ -342,6 +342,8 @@ handle enemy encounters, and trigger random ones from a table for each map
 create a lua file for each map with the same name as the tiled map (`default.lua` for example)
 and put the file into the `server/encounters/` (create this folder if it does not exist)
 
+You can set `persistent_health=true` in an area's returned encounter table to keep the health the player finished the battle with. HP battle rewards require persistent health.
+
 encounter options:
 - name (string)
     - if provided, this name can be used to trigger encounters by name, the encounter still needs to be added to a encounter table
@@ -530,10 +532,11 @@ local encounter1 = {
         {0,0,0,0,1,0},
         {0,0,0,1,0,0}
     },
-    results_callback = give_result_awards --function (player_id,encounter_info,stats)
+    results_callback = give_result_awards --function (player_id,encounter_info,stats,rewards)
 }
 
 return {
+    persistent_health=true,
     minimum_steps_before_encounter=400,
     encounter_chance_per_step=0.01,
     encounters={encounter1}
@@ -594,35 +597,41 @@ return {
 }
 ```
 
-you can also specify a results calback (as seen above) which will be called at the end of the battle;
-here we are requiring ezmemory in order to give the player some reward monies for winning the battle
+you can also specify a results callback (as seen above) which will be called at the end of the battle.
+`stats.reason` is `1` for win, `2` for lose, `3` for run, and `4` for dev escape.
+
+The optional `rewards` table contains any battle rewards ezencounters is about to display. You can add your own rewards to it.
 
 ```lua
-local ezmemory = require('scripts/ezlibs-scripts/ezmemory')
-
-local sfx = {
-    item_get='/server/assets/ezlibs-assets/sfx/item_get.ogg'
-}
-
-local give_result_awards = function (player_id,encounter_info,stats)
-    -- stats = { health: number, score: number, time: number, ran: bool, emotion: number, turns: number, npcs: { id: String, health: number }[] }
-    -- set the player emotion if they left the battle with full sync (1)
-    if stats.emotion == 1 then
-        Net.set_player_emotion(player_id, stats.emotion)
-    else
-        Net.set_player_emotion(player_id, 0)
+local give_result_awards = function (player_id,encounter_info,stats,rewards)
+    if stats.reason == 1 and stats.score >= 9 then
+        table.insert(rewards,{type="bugfrags",value=1})
     end
-    -- set the player health to whatever they finished the battle with
-    Net.set_player_health(player_id,stats.health)
-    if stats.ran then
-        return -- no rewards for wimps
-    end
-    local reward_monies = (stats.score*50)
-    ezmemory.spend_player_money(player_id,-reward_monies) -- spending money backwards gives money
-    Net.message_player(player_id,"Got $"..reward_monies.."!")
-    Net.play_sound_for_player(player_id,sfx.item_get)
 end
 ```
+
+Reward types are `money`, `hp`, and `bugfrags`. HP rewards require `persistent_health=true`.
+Battle chips can also be added with `{type="chip",card_id="package.id",code="A"}`; your callback is responsible for saving chip ownership.
+
+## Battle Rewards
+Battle rewards are optional. Create `/server/encounters/rewards.lua` to enable them. Without this file, battles work as normal.
+
+Rewards are configured by enemy name and rank. Busting levels 1-4 use `low`, 5-8 use `mid`, and 9-S use `high`.
+
+```lua
+return {
+    Mettaur = {
+        [1] = {
+            low = {type="money",value=50},
+            mid = {type="money",value=100},
+            high = {type="money",value=200},
+            low_hp_recovery = {threshold=0.375,value=50},
+        },
+    },
+}
+```
+
+`low_hp_recovery` is optional and replaces the normal reward when the player finishes below the configured percentage of max HP. It requires `persistent_health=true`.
 
 ## Radius Encounters
 You can create an object with type `Radius Encounter` which will trigger an encounter the first time a player reaches it.
