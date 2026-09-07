@@ -3,7 +3,7 @@
 -- Uses ezusers for permission checks.
 -- Board data stored in memory/board/<board_name>.json (path from ezconfig).
 
-local json = require("scripts/libs/json")
+local json = require("scripts/ezlibs-scripts/json")
 local ezusers = require("scripts/ezlibs-scripts/ezusers")
 local helpers = require("scripts/ezlibs-scripts/helpers")
 local ezconfig = require("scripts/ezlibs-scripts/ezconfig")  -- load config
